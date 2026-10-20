@@ -52,22 +52,42 @@ jobs:
           mkdir -p backend/storage/logs
           mkdir -p backend/bootstrap/cache
 
-      - name: 🚀 Deploy to Hostinger
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: 🚀 Deploy to Hostinger via Rsync over SSH
+        env:
+          SSH_PASS: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '65002' }}
+          REMOTE_PATH: ${{ secrets.HOSTINGER_REMOTE_PATH || 'public_html/' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass rsync
+          TARGET_DIR="${REMOTE_PATH%/}/"
+          sshpass -p "$SSH_PASS" rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no -p $SSH_PORT" \
+            --exclude '.git*' \
+            --exclude '.github*' \
+            --exclude '**/node_modules/**' \
+            --exclude 'backend/tests/**' \
+            --exclude 'backend/.env' \
+            --exclude 'backend/storage/logs/*.log' \
+            ./ "$SSH_USER@$SSH_HOST:$TARGET_DIR"
+
+      - name: ⚡ Run Migrations & Cache Optimization
+        uses: appleboy/ssh-action@master
+        continue-on-error: true
         with:
-          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          port: ${{ secrets.HOSTINGER_FTP_PORT || 21 }}
-          protocol: ${{ secrets.HOSTINGER_FTP_PROTOCOL || 'ftp' }}
-          server-dir: ${{ secrets.HOSTINGER_FTP_SERVER_DIR || 'public_html/' }}
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            frontend/node_modules/**
-            backend/node_modules/**
-            backend/tests/**
-            backend/.phpunit.result.cache
-            backend/phpunit.xml
-            backend/.env
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT || 65002 }}
+          script: |
+            TARGET="${{ secrets.HOSTINGER_REMOTE_PATH || 'public_html' }}"
+            cd "$TARGET/backend" || cd ~/public_html/backend
+            if [ -f .env ]; then
+              php artisan migrate --force
+              php artisan storage:link || true
+              php artisan optimize:clear
+              echo "✅ Auto-migration and cache clearance completed successfully!"
+            else
+              echo "⚠️ backend/.env not found yet. Please create backend/.env to complete database connection."
+            fi
