@@ -52,12 +52,14 @@ jobs:
           mkdir -p backend/storage/logs
           mkdir -p backend/bootstrap/cache
 
-      - name: 🚀 Deploy to Hostinger via FTP
+      - name: 🚀 Deploy to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.HOSTINGER_FTP_SERVER }}
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          port: ${{ secrets.HOSTINGER_FTP_PORT || 21 }}
+          protocol: ${{ secrets.HOSTINGER_FTP_PROTOCOL || 'ftp' }}
           server-dir: public_html/
           exclude: |
             **/.git*
