@@ -79,7 +79,9 @@ jobs:
             --exclude 'backend/.env' \
             --exclude 'backend/storage/logs/*.log' \
             --exclude 'backend/storage/app/public/**' \
-            --exclude 'backend/storage/framework/**' \
+            --exclude 'backend/storage/framework/views/*.php' \
+            --exclude 'backend/storage/framework/cache/data/*' \
+            --exclude 'backend/storage/framework/sessions/*' \
             ./ "$SSH_USER@$SSH_HOST:$TARGET_DIR"
 
       - name: ⚡ Run Migrations & Cache Optimization
@@ -93,6 +95,8 @@ jobs:
           script: |
             TARGET="${{ secrets.HOSTINGER_REMOTE_PATH || 'public_html' }}"
             cd "$TARGET/backend" || cd ~/public_html/backend
+            mkdir -p storage/framework/views storage/framework/cache/data storage/framework/sessions storage/logs bootstrap/cache
+            chmod -R 775 storage bootstrap/cache
             if [ -f .env ]; then
               php artisan migrate --force
               php artisan storage:link || true
