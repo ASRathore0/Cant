@@ -3,13 +3,14 @@ import { Category, MenuItem, RestaurantSettings, User, DashboardMetrics, Canteen
 
 const getBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    if (envUrl) {
-      return envUrl.replace('localhost', window.location.hostname).replace('127.0.0.1', window.location.hostname);
-    }
-    return `http://${window.location.hostname}:8000/api/v1`;
+  if (envUrl) {
+    return envUrl;
   }
-  return envUrl || 'http://localhost:8000/api/v1';
+  // In production (on Hostinger or live domain), use same origin /api/v1
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${window.location.origin}/api/v1`;
+  }
+  return 'http://localhost:8000/api/v1';
 };
 
 export const apiClient: AxiosInstance = axios.create({

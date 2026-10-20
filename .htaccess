@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Security: Protect sensitive files and directories
+    RewriteRule ^backend/\.env$ - [F,L,NC]
+    RewriteRule ^backend/storage/logs/.*$ - [F,L,NC]
+    RewriteRule ^\.git.* - [F,L,NC]
+
+    # Route all public traffic into backend/public/
+    RewriteCond %{REQUEST_URI} !^/backend/public/
+    RewriteRule ^(.*)$ backend/public/$1 [L]
+</IfModule>
