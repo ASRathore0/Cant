@@ -64,6 +64,10 @@ if ($action) {
                 Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'HiraSweetsSeeder', '--force' => true]);
                 $output = Illuminate\Support\Facades\Artisan::output();
                 break;
+            case 'migrate_fresh_seed':
+                Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
+                $output = Illuminate\Support\Facades\Artisan::output();
+                break;
             case 'seed_all':
                 Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
                 $output = Illuminate\Support\Facades\Artisan::output();
@@ -131,6 +135,9 @@ if ($action) {
             </a>
             <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=seed_canteens" class="btn btn-secondary">
                 🏪 Seed Default Canteens
+            </a>
+            <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=migrate_fresh_seed" class="btn btn-primary" style="background: #e11d48; color: #fff;" onclick="return confirm('⚠️ WARNING: This will drop all tables and fresh seed all 4 entities and 153 dishes. Proceed?');">
+                🔥 Fresh Migrate & Seed (migrate:fresh --seed)
             </a>
             <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=seed_all" class="btn btn-primary" style="background: #10b981; color: #fff;">
                 🌱 Seed All Entities & Menu Data
