@@ -114,10 +114,11 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) =
               </a>
             )}
 
+            {/* Staff / Manager Login */}
             <Link
-              to="/admin/dashboard"
+              to={activeCanteenSlug || settings?.slug ? `/admin/login?canteen=${activeCanteenSlug || settings?.slug}` : '/admin/login'}
               className="hidden lg:inline-flex h-8 lg:h-9 px-2 lg:px-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-stone-300 items-center justify-center gap-1 transition-colors text-xs font-medium"
-              title="Admin Hub"
+              title="Staff Login"
             >
               <Lock className="w-3.5 h-3.5 text-stone-300" />
               <span>Staff</span>
@@ -232,7 +233,7 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) =
             {/* Drawer Footer: Staff Login */}
             <div className="pt-4 border-t border-white/10">
               <Link
-                to="/admin/dashboard"
+                to={activeCanteenSlug || settings?.slug ? `/admin/login?canteen=${activeCanteenSlug || settings?.slug}` : '/admin/login'}
                 onClick={() => setIsDrawerOpen(false)}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-stone-300 hover:text-white text-xs font-bold transition-all border border-white/10"
               >

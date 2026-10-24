@@ -13,9 +13,11 @@ class Canteen extends Model
 
     protected $fillable = [
         'name',
+        'page_title',
         'slug',
         'tagline',
         'logo_url',
+        'favicon_url',
         'primary_color',
         'secondary_color',
         'accent_color',
@@ -40,6 +42,11 @@ class Canteen extends Model
         'qr_target_url',
         'is_active',
         'is_default',
+    ];
+
+    protected $appends = [
+        'full_logo_url',
+        'full_favicon_url',
     ];
 
     protected $casts = [
@@ -82,6 +89,22 @@ class Canteen extends Model
     }
 
     /**
+     * Get the formatted full favicon URL.
+     */
+    public function getFullFaviconUrlAttribute(): ?string
+    {
+        if (!$this->favicon_url) {
+            return null;
+        }
+
+        if (Str::startsWith($this->favicon_url, ['http://', 'https://'])) {
+            return $this->favicon_url;
+        }
+
+        return url(ltrim($this->favicon_url, '/'));
+    }
+
+    /**
      * Convert canteen attributes to frontend settings dictionary.
      */
     public function toSettingsArray(): array
@@ -90,10 +113,13 @@ class Canteen extends Model
             'id' => $this->id,
             'canteen_id' => $this->id,
             'restaurant_name' => $this->name,
+            'page_title' => $this->page_title ?: ($this->name . ' | Digital Menu'),
             'slug' => $this->slug,
             'tagline' => $this->tagline ?? 'Good Food. Made Fresh. Served with Respect.',
             'logo_url' => $this->logo_url ?? '/logo.png',
             'full_logo_url' => $this->full_logo_url,
+            'favicon_url' => $this->favicon_url,
+            'full_favicon_url' => $this->full_favicon_url,
             'primary_color' => $this->primary_color ?? '#062D1F',
             'secondary_color' => $this->secondary_color ?? '#07402A',
             'accent_color' => $this->accent_color ?? '#E8C928',

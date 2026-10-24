@@ -13,10 +13,20 @@ use Illuminate\Support\Str;
 class AdminSettingController extends Controller
 {
     /**
-     * Get all restaurant settings.
+     * Get restaurant settings.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if ($user && $user->canteen_id) {
+            $canteen = \App\Models\Canteen::find($user->canteen_id);
+            if ($canteen) {
+                return response()->json([
+                    'settings' => $canteen->toSettingsArray(),
+                ]);
+            }
+        }
+
         $settings = RestaurantSetting::getAllSettings();
 
         // Ensure logo URL is properly formatted
@@ -36,6 +46,7 @@ class AdminSettingController extends Controller
      */
     public function update(RestaurantSettingRequest $request): JsonResponse
     {
+        $user = $request->user();
         $validated = $request->validated();
 
         // Handle logo file upload
@@ -45,6 +56,36 @@ class AdminSettingController extends Controller
             $path = $file->storeAs('branding', $safeName, 'public');
             $validated['logo_url'] = '/storage/' . $path;
             unset($validated['logo']);
+        }
+
+        if ($user && $user->canteen_id) {
+            $canteen = \App\Models\Canteen::findOrFail($user->canteen_id);
+
+            if (isset($validated['restaurant_name'])) {
+                $canteen->name = $validated['restaurant_name'];
+            }
+            if (isset($validated['logo_url'])) {
+                $canteen->logo_url = $validated['logo_url'];
+            }
+            if (isset($validated['army_discount_enabled'])) {
+                $canteen->discount_badge_enabled = filter_var($validated['army_discount_enabled'], FILTER_VALIDATE_BOOLEAN);
+            }
+            if (isset($validated['army_discount_text'])) {
+                $canteen->discount_badge_text = $validated['army_discount_text'];
+            }
+
+            foreach ($validated as $key => $value) {
+                if (!in_array($key, ['restaurant_name', 'logo', 'logo_url', 'army_discount_enabled', 'army_discount_text']) && in_array($key, $canteen->getFillable())) {
+                    $canteen->$key = $value;
+                }
+            }
+
+            $canteen->save();
+
+            return response()->json([
+                'message' => "Settings for '{$canteen->name}' updated successfully",
+                'settings' => $canteen->toSettingsArray(),
+            ]);
         }
 
         foreach ($validated as $key => $value) {

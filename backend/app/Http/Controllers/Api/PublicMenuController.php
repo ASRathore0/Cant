@@ -35,19 +35,13 @@ class PublicMenuController extends Controller
 
         $query = Category::query()->active()->orderBy('sort_order', 'asc');
         if ($canteen) {
-            $query->where(function ($q) use ($canteen) {
-                $q->where('canteen_id', $canteen->id)
-                  ->orWhereNull('canteen_id'); // backwards compatibility
-            });
+            $query->where('canteen_id', $canteen->id);
         }
 
         $categories = $query->with(['menuItems' => function ($q) use ($canteen) {
             $q->orderBy('sort_order', 'asc');
             if ($canteen) {
-                $q->where(function ($sub) use ($canteen) {
-                    $sub->where('canteen_id', $canteen->id)
-                        ->orWhereNull('canteen_id');
-                });
+                $q->where('canteen_id', $canteen->id);
             }
         }])->get();
 
@@ -85,8 +79,10 @@ class PublicMenuController extends Controller
                     'id' => $c->id,
                     'name' => $c->name,
                     'slug' => $c->slug,
+                    'page_title' => $c->page_title,
                     'tagline' => $c->tagline,
                     'logo_url' => $c->full_logo_url,
+                    'favicon_url' => $c->full_favicon_url,
                     'primary_color' => $c->primary_color,
                     'accent_color' => $c->accent_color,
                     'bg_color' => $c->bg_color,
@@ -105,12 +101,27 @@ class PublicMenuController extends Controller
     /**
      * Get active categories list.
      */
-    public function categories(): JsonResponse
+    public function categories(Request $request): JsonResponse
     {
-        $categories = Category::query()
-            ->active()
-            ->orderBy('sort_order', 'asc')
-            ->get();
+        $canteenParam = $request->input('canteen');
+        $canteen = null;
+
+        if ($canteenParam) {
+            $canteen = Canteen::where('slug', $canteenParam)
+                ->orWhere('id', is_numeric($canteenParam) ? (int) $canteenParam : -1)
+                ->first();
+        }
+
+        if (!$canteen) {
+            $canteen = Canteen::getDefault();
+        }
+
+        $query = Category::query()->active()->orderBy('sort_order', 'asc');
+        if ($canteen) {
+            $query->where('canteen_id', $canteen->id);
+        }
+
+        $categories = $query->get();
 
         return response()->json([
             'categories' => CategoryResource::collection($categories),

@@ -35,6 +35,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
 
   const isSuperAdminUser = user?.role === 'super_admin' || user?.role === 'superadmin';
 
+  React.useEffect(() => {
+    const restaurantName = user?.canteen?.name || 'Restaurant';
+    document.title = `${title} | ${restaurantName} Control Hub`;
+
+    const fav = (user?.canteen as any)?.full_favicon_url || (user?.canteen as any)?.favicon_url || user?.canteen?.logo_url;
+    if (fav) {
+      let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = fav;
+    }
+  }, [user, title]);
+
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Menu Items', path: '/admin/menu', icon: UtensilsCrossed },
@@ -45,17 +61,29 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
     { name: 'Settings & QR', path: '/admin/settings', icon: Settings },
   ];
 
+  const restaurantName = user?.canteen?.name || (isSuperAdminUser ? 'Platform Super Admin' : 'Restaurant Portal');
+  const restaurantLogo = user?.canteen?.logo_url || '/logo.png';
+  const canteenSlug = user?.canteen?.slug || '';
+  const publicMenuUrl = canteenSlug ? `/menu?canteen=${canteenSlug}` : '/menu';
+  const primaryColor = user?.canteen?.primary_color || '#063D29';
+  const secondaryColor = user?.canteen?.secondary_color || '#075C35';
+  const accentColor = user?.canteen?.accent_color || '#E8C928';
+
   return (
     <div className="min-h-screen bg-[#FAF8F1] flex flex-col md:flex-row text-[#20251F]">
       {/* Mobile Top Navbar */}
-      <div className="md:hidden bg-[#063D29] text-white px-4 py-3 flex items-center justify-between border-b border-[#075C35]">
-        <div className="flex items-center gap-2.5">
-          <img src="/logo.png" alt="Annapoorna" className="w-8 h-8 rounded-full bg-white p-0.5" />
-          <span className="font-serif font-bold text-base">Annapoorna Admin</span>
+      <div
+        className="md:hidden text-white px-4 py-3 flex items-center justify-between border-b border-black/10"
+        style={{ backgroundColor: primaryColor }}
+      >
+        <div className="flex items-center gap-2.5 truncate">
+          <img src={restaurantLogo} alt={restaurantName} className="w-8 h-8 rounded-full bg-white p-0.5 object-cover shrink-0" />
+          <span className="font-serif font-bold text-base truncate">{restaurantName}</span>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-1 text-white hover:text-[#E8C928]"
+          className="p-1 text-white hover:opacity-80"
+          style={{ color: accentColor }}
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -63,20 +91,26 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed md:sticky top-0 inset-y-0 left-0 z-40 w-64 bg-[#063D29] text-stone-200 flex flex-col justify-between p-4 shadow-xl transition-transform duration-300 ${
+        className={`fixed md:sticky top-0 inset-y-0 left-0 z-40 w-64 text-stone-200 flex flex-col justify-between p-4 shadow-xl transition-transform duration-300 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
+        style={{ backgroundColor: primaryColor }}
       >
         <div>
           {/* Brand header in sidebar */}
           <div className="flex items-center gap-3 pb-6 border-b border-white/10 px-2">
-            <div className="w-11 h-11 rounded-full overflow-hidden bg-white p-0.5 shadow-md flex-shrink-0">
-              <img src="/logo.png" alt="Annapoorna Logo" className="w-full h-full object-cover rounded-full" />
+            <div
+              className="w-11 h-11 rounded-full overflow-hidden bg-white p-0.5 shadow-md flex-shrink-0"
+              style={{ border: `2px solid ${accentColor}` }}
+            >
+              <img src={restaurantLogo} alt={restaurantName} className="w-full h-full object-cover rounded-full" />
             </div>
-            <div>
-              <h2 className="font-serif font-bold text-lg text-white leading-tight">Annapoorna</h2>
-              <span className="text-[11px] font-semibold text-[#E8C928] tracking-wider uppercase">
-                Control Hub
+            <div className="truncate min-w-0">
+              <h2 className="font-serif font-bold text-base sm:text-lg text-white leading-tight truncate">
+                {restaurantName}
+              </h2>
+              <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: accentColor }}>
+                {isSuperAdminUser ? 'Platform Hub' : 'Manager Hub'}
               </span>
             </div>
           </div>
@@ -93,12 +127,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                       isActive
-                        ? 'bg-[#075C35] text-white shadow-md border-l-4 border-[#E8C928]'
+                        ? 'text-white shadow-md border-l-4'
                         : 'text-stone-300 hover:bg-white/5 hover:text-white'
                     }`
                   }
+                  style={({ isActive }) => isActive ? { backgroundColor: secondaryColor, borderLeftColor: accentColor } : {}}
                 >
-                  <Icon className="w-4 h-4 text-[#E8C928]" />
+                  <Icon className="w-4 h-4" style={{ color: accentColor }} />
                   <span>{item.name}</span>
                 </NavLink>
               );
@@ -108,16 +143,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
           {/* Shortcut to Customer View */}
           <div className="mt-6 pt-4 border-t border-white/10">
             <Link
-              to="/menu"
+              to={publicMenuUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium text-stone-300 hover:text-white hover:bg-white/5 transition-colors border border-white/10"
             >
-              <span className="flex items-center gap-2">
-                <QrCode className="w-4 h-4 text-[#E8C928]" />
-                <span>View Public Menu</span>
+              <span className="flex items-center gap-2 truncate">
+                <QrCode className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
+                <span className="truncate">View Public Menu</span>
               </span>
-              <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
+              <ExternalLink className="w-3.5 h-3.5 text-stone-400 shrink-0" />
             </Link>
           </div>
         </div>
@@ -125,12 +160,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
         {/* User Info & Logout */}
         <div className="pt-4 border-t border-white/10">
           <div className="px-3 py-2 flex items-center gap-3 rounded-xl bg-white/5 mb-3">
-            <div className="w-8 h-8 rounded-full bg-[#075C35] flex items-center justify-center text-white font-bold text-xs">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+              style={{ backgroundColor: secondaryColor }}
+            >
               <UserIcon className="w-4 h-4" />
             </div>
             <div className="truncate">
               <p className="text-xs font-bold text-white truncate">{user?.name || 'Administrator'}</p>
-              <p className="text-[10px] text-stone-400 truncate">{user?.email || 'admin@annapoorna.com'}</p>
+              <p className="text-[10px] text-stone-400 truncate">{user?.email || 'admin@canteen.com'}</p>
             </div>
           </div>
 

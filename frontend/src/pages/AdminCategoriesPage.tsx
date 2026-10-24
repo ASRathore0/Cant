@@ -3,10 +3,15 @@ import { Plus, Edit2, Trash2, FolderTree, CheckCircle, XCircle, AlertCircle, X }
 import { AdminLayout } from '../components/AdminLayout';
 import { Toast, ToastMessage } from '../components/Toast';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { adminApi } from '../services/api';
-import { Category } from '../types';
+import { adminApi, publicApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { Category, Canteen } from '../types';
 
 export const AdminCategoriesPage: React.FC = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'superadmin';
+  const [canteens, setCanteens] = useState<Canteen[]>([]);
+  const [selectedCanteenId, setSelectedCanteenId] = useState<string>('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -40,10 +45,24 @@ export const AdminCategoriesPage: React.FC = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Load canteens for Super Admin
+  useEffect(() => {
+    if (isSuperAdmin) {
+      publicApi.getCanteens().then((list) => {
+        setCanteens(list);
+        if (!selectedCanteenId && list.length > 0) {
+          const defaultCanteen = list.find((c) => c.is_default) || list[0];
+          setSelectedCanteenId(defaultCanteen.id.toString());
+        }
+      }).catch((err) => console.error('Failed to load canteens for category selector:', err));
+    }
+  }, [isSuperAdmin]);
+
   const fetchCategories = async () => {
     setIsLoading(true);
+    const activeCanteenId = isSuperAdmin ? selectedCanteenId : (user?.canteen_id?.toString() || undefined);
     try {
-      const data = await adminApi.getCategories();
+      const data = await adminApi.getCategories({ canteen_id: activeCanteenId || undefined });
       setCategories(data || []);
     } catch {
       addToast('error', 'Failed to load categories');
@@ -54,7 +73,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [selectedCanteenId]);
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
@@ -88,13 +107,17 @@ export const AdminCategoriesPage: React.FC = () => {
     setFormErrors({});
 
     try {
-      const payload = {
+      const payload: any = {
         name: formData.name,
         slug: formData.slug || undefined,
         description: formData.description || undefined,
         sort_order: parseInt(formData.sort_order || '0', 10),
         is_active: formData.is_active,
       };
+
+      if (isSuperAdmin && selectedCanteenId) {
+        payload.canteen_id = parseInt(selectedCanteenId, 10);
+      }
 
       if (editingCategory) {
         const res = await adminApi.updateCategory(editingCategory.id, payload);
@@ -137,7 +160,11 @@ export const AdminCategoriesPage: React.FC = () => {
   return (
     <AdminLayout
       title="Category Management"
-      subtitle="Organise your digital menu into sections, manage display order, and maintain item groupings"
+      subtitle={`Organise digital menu sections for ${
+        isSuperAdmin
+          ? canteens.find((c) => c.id.toString() === selectedCanteenId)?.name || 'restaurant'
+          : user?.canteen?.name || 'restaurant'
+      }`}
     >
       <Toast toasts={toasts} onDismiss={removeToast} />
 
@@ -150,6 +177,29 @@ export const AdminCategoriesPage: React.FC = () => {
         onConfirm={handleDelete}
         onCancel={() => setCategoryToDelete(null)}
       />
+
+      {/* Super Admin Venue Selector */}
+      {isSuperAdmin && (
+        <div className="bg-[#062D1F] text-white p-3.5 rounded-2xl mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 border border-emerald-800 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase font-extrabold tracking-wider text-[#E8C928]">Managing Restaurant:</span>
+            <span className="text-sm font-bold text-white">
+              {canteens.find((c) => c.id.toString() === selectedCanteenId)?.name || 'All Venues'}
+            </span>
+          </div>
+          <select
+            value={selectedCanteenId}
+            onChange={(e) => setSelectedCanteenId(e.target.value)}
+            className="w-full sm:w-auto px-3.5 py-1.5 bg-[#07402A] border border-white/20 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-[#E8C928]"
+          >
+            {canteens.map((c) => (
+              <option key={c.id} value={c.id.toString()}>
+                {c.name} {c.is_default ? '(Primary / Default)' : '(Outlet / Branch)'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Top Action Bar */}
       <div className="flex items-center justify-between gap-3 mb-6">

@@ -18,11 +18,18 @@ import {
 import { AdminLayout } from '../components/AdminLayout';
 import { Toast, ToastMessage } from '../components/Toast';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { adminApi } from '../services/api';
-import { Category, MenuItem } from '../types';
+import { adminApi, publicApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { Category, MenuItem, Canteen } from '../types';
 
 export const AdminMenuPage: React.FC = () => {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'superadmin';
+  const [canteens, setCanteens] = useState<Canteen[]>([]);
+  const [selectedCanteenId, setSelectedCanteenId] = useState<string>(
+    searchParams.get('canteen_id') || ''
+  );
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,16 +79,33 @@ export const AdminMenuPage: React.FC = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Load canteens for Super Admin
+  useEffect(() => {
+    if (isSuperAdmin) {
+      publicApi.getCanteens().then((list) => {
+        setCanteens(list);
+        if (!selectedCanteenId && list.length > 0) {
+          const defaultCanteen = list.find((c) => c.is_default) || list[0];
+          setSelectedCanteenId(defaultCanteen.id.toString());
+        }
+      }).catch((err) => console.error('Failed to load canteens for menu selector:', err));
+    }
+  }, [isSuperAdmin]);
+
   const fetchData = async () => {
     setIsLoading(true);
+    const activeCanteenId = isSuperAdmin ? selectedCanteenId : (user?.canteen_id?.toString() || undefined);
     try {
       const [itemsRes, catsRes] = await Promise.all([
         adminApi.getMenuItems({
+          canteen_id: activeCanteenId || undefined,
           search: searchQuery || undefined,
           category_id: categoryFilter || undefined,
           is_available: availabilityFilter !== '' ? availabilityFilter : undefined,
         }),
-        adminApi.getCategories(),
+        adminApi.getCategories({
+          canteen_id: activeCanteenId || undefined,
+        }),
       ]);
 
       setItems(itemsRes.data || []);
@@ -96,7 +120,7 @@ export const AdminMenuPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [categoryFilter, availabilityFilter]);
+  }, [categoryFilter, availabilityFilter, selectedCanteenId]);
 
   // Open modal if URL has ?action=new
   useEffect(() => {
@@ -187,6 +211,10 @@ export const AdminMenuPage: React.FC = () => {
         payload.append('image', imageFile);
       }
 
+      if (isSuperAdmin && selectedCanteenId) {
+        payload.append('canteen_id', selectedCanteenId);
+      }
+
       if (editingItem) {
         const res = await adminApi.updateMenuItem(editingItem.id, payload);
         addToast('success', res.message);
@@ -250,7 +278,11 @@ export const AdminMenuPage: React.FC = () => {
   return (
     <AdminLayout
       title="Menu Items Management"
-      subtitle="Create, edit, price, and control live availability of Annapoorna menu items"
+      subtitle={`Create, edit, price, and control live availability of ${
+        isSuperAdmin
+          ? canteens.find((c) => c.id.toString() === selectedCanteenId)?.name || 'restaurant'
+          : user?.canteen?.name || 'restaurant'
+      } menu items`}
     >
       <Toast toasts={toasts} onDismiss={removeToast} />
 
@@ -263,6 +295,32 @@ export const AdminMenuPage: React.FC = () => {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setItemToDelete(null)}
       />
+
+      {/* Super Admin Venue Selector */}
+      {isSuperAdmin && (
+        <div className="bg-[#062D1F] text-white p-3.5 rounded-2xl mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 border border-emerald-800 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase font-extrabold tracking-wider text-[#E8C928]">Managing Restaurant:</span>
+            <span className="text-sm font-bold text-white">
+              {canteens.find((c) => c.id.toString() === selectedCanteenId)?.name || 'All Venues'}
+            </span>
+          </div>
+          <select
+            value={selectedCanteenId}
+            onChange={(e) => {
+              setSelectedCanteenId(e.target.value);
+              setCategoryFilter('');
+            }}
+            className="w-full sm:w-auto px-3.5 py-1.5 bg-[#07402A] border border-white/20 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-[#E8C928]"
+          >
+            {canteens.map((c) => (
+              <option key={c.id} value={c.id.toString()}>
+                {c.name} {c.is_default ? '(Primary / Default)' : '(Outlet / Branch)'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Top Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-[#E3E0D6] shadow-sm mb-6 flex flex-col md:flex-row items-center justify-between gap-3">

@@ -36,10 +36,13 @@ export interface Category {
 export interface Canteen {
   id: number;
   name: string;
+  page_title?: string | null;
   slug: string;
   tagline: string | null;
   logo_url: string | null;
   full_logo_url?: string;
+  favicon_url?: string | null;
+  full_favicon_url?: string;
   primary_color: string;
   secondary_color: string;
   accent_color: string;
@@ -73,6 +76,7 @@ export interface Canteen {
 
 export interface RestaurantSettings {
   restaurant_name: string;
+  page_title?: string;
   tagline: string;
   pure_veg_label: string;
   dietary_type?: string;
@@ -81,6 +85,8 @@ export interface RestaurantSettings {
   accent_color?: string;
   bg_color?: string;
   theme_preset?: string;
+  favicon_url?: string;
+  full_favicon_url?: string;
   address: string;
   location_landmark: string;
   phone: string;
@@ -125,6 +131,10 @@ export interface User {
     name: string;
     slug: string;
     logo_url?: string;
+    primary_color?: string;
+    secondary_color?: string;
+    accent_color?: string;
+    bg_color?: string;
   } | null;
 }
 

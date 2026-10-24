@@ -50,7 +50,9 @@ class CategorySeeder extends Seeder
             ],
         ];
 
+        $defaultCanteenId = \App\Models\Canteen::where('slug', 'annapoorna-canteen')->value('id') ?? 1;
         foreach ($categories as $cat) {
+            $cat['canteen_id'] = $defaultCanteenId;
             Category::updateOrCreate(['slug' => $cat['slug']], $cat);
         }
     }

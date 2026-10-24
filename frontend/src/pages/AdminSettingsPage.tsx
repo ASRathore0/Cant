@@ -168,7 +168,8 @@ export const AdminSettingsPage: React.FC = () => {
   const handleDownloadQr = () => {
     if (!qrDataUrl) return;
     const link = document.createElement('a');
-    link.download = 'Annapoorna_Canteen_Menu_QR.png';
+    const safeName = (formData.restaurant_name || settings?.restaurant_name || 'Restaurant').replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.download = `${safeName}_Menu_QR.png`;
     link.href = qrDataUrl;
     link.click();
   };
@@ -416,13 +417,17 @@ export const AdminSettingsPage: React.FC = () => {
               className="mt-6 bg-[#FAF8F1] p-5 rounded-2xl border-2 border-[#063D29] text-center shadow-md flex flex-col items-center"
             >
               <div className="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 shadow-sm mb-2">
-                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                <img
+                  src={settings?.logo_url || '/logo.png'}
+                  alt={formData.restaurant_name || 'Logo'}
+                  className="w-full h-full object-cover rounded-full"
+                />
               </div>
               <h4 className="font-serif font-extrabold text-base text-[#063D29] leading-tight">
-                Annapoorna Canteen
+                {formData.restaurant_name || settings?.restaurant_name || 'Restaurant Canteen'}
               </h4>
               <p className="text-[10px] text-[#075C35] font-bold uppercase tracking-wider mt-0.5">
-                Food With Respect • 100% Pure Veg
+                {formData.pure_veg_label || formData.tagline || 'Digital Smart Menu'}
               </p>
 
               {/* QR Image */}

@@ -96,7 +96,7 @@ export const publicApi = {
 |--------------------------------------------------------------------------
 */
 export const authApi = {
-  login: async (credentials: { email: string; password: string }) => {
+  login: async (credentials: { email: string; password: string; canteen_slug?: string }) => {
     const res = await apiClient.post<{
       message: string;
       token: string;
@@ -132,6 +132,7 @@ export const adminApi = {
 
   // Menu items
   getMenuItems: async (params?: {
+    canteen_id?: number | string;
     search?: string;
     category_id?: number | string;
     is_available?: boolean | string;
@@ -193,8 +194,8 @@ export const adminApi = {
   },
 
   // Categories
-  getCategories: async () => {
-    const res = await apiClient.get<{ data: Category[] }>('/admin/categories');
+  getCategories: async (params?: { canteen_id?: number | string }) => {
+    const res = await apiClient.get<{ data: Category[] }>('/admin/categories', { params });
     return res.data.data;
   },
 

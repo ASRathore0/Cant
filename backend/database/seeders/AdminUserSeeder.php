@@ -27,7 +27,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@canteen.com'],
             [
                 'name' => 'Platform Super Admin',
-                'password' => 'Annapoorna@2026',
+                'password' => 'canteen@2026',
                 'role' => 'super_admin',
                 'email_verified_at' => now(),
             ]

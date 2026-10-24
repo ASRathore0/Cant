@@ -42,12 +42,25 @@ class AuthController extends Controller
 
         RateLimiter::clear($throttleKey);
 
+        $canteen = $user->canteen;
+
+        // If login was initiated for a specific restaurant, verify manager belongs to it
+        if ($request->filled('canteen_slug') && $user->role === 'manager' && $user->canteen_id) {
+            $targetCanteen = \App\Models\Canteen::where('slug', $request->input('canteen_slug'))->first();
+            if ($targetCanteen && $user->canteen_id !== $targetCanteen->id) {
+                return response()->json([
+                    'message' => "Access denied. Your manager credentials belong to '{$canteen->name}', not '{$targetCanteen->name}'. Please log in through the {$canteen->name} portal.",
+                    'errors' => [
+                        'email' => ["Account belongs to '{$canteen->name}'."],
+                    ],
+                ], 403);
+            }
+        }
+
         // Revoke existing tokens for a clean session
         $user->tokens()->delete();
 
         $token = $user->createToken('annapoorna-admin-token')->plainTextToken;
-
-        $canteen = $user->canteen;
 
         return response()->json([
             'message' => 'Login successful',
@@ -63,6 +76,10 @@ class AuthController extends Controller
                     'name' => $canteen->name,
                     'slug' => $canteen->slug,
                     'logo_url' => $canteen->full_logo_url,
+                    'primary_color' => $canteen->primary_color,
+                    'secondary_color' => $canteen->secondary_color,
+                    'accent_color' => $canteen->accent_color,
+                    'bg_color' => $canteen->bg_color,
                 ] : null,
             ],
         ]);
@@ -100,6 +117,10 @@ class AuthController extends Controller
                     'name' => $canteen->name,
                     'slug' => $canteen->slug,
                     'logo_url' => $canteen->full_logo_url,
+                    'primary_color' => $canteen->primary_color,
+                    'secondary_color' => $canteen->secondary_color,
+                    'accent_color' => $canteen->accent_color,
+                    'bg_color' => $canteen->bg_color,
                 ] : null,
             ],
         ]);

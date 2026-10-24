@@ -433,14 +433,18 @@ class MenuItemSeeder extends Seeder
             ],
         ];
 
+        $defaultCanteenId = \App\Models\Canteen::where('slug', 'annapoorna-canteen')->value('id') ?? 1;
+
         foreach ($items as $data) {
             $catSlug = $data['category_slug'];
             unset($data['category_slug']);
 
             if (isset($categories[$catSlug])) {
                 $data['category_id'] = $categories[$catSlug];
+                $data['canteen_id'] = $defaultCanteenId;
                 MenuItem::updateOrCreate(
                     [
+                        'canteen_id' => $defaultCanteenId,
                         'category_id' => $data['category_id'],
                         'name' => $data['name']
                     ],

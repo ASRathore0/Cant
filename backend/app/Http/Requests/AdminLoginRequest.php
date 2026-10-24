@@ -16,6 +16,7 @@ class AdminLoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'canteen_slug' => ['nullable', 'string', 'max:150'],
         ];
     }
 }

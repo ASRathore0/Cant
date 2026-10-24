@@ -57,8 +57,11 @@ class AdminCanteenController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'page_title' => ['nullable', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:150', 'unique:canteens,slug'],
             'tagline' => ['nullable', 'string', 'max:255'],
+            'logo_url' => ['nullable', 'string', 'max:1000'],
+            'favicon_url' => ['nullable', 'string', 'max:1000'],
             'primary_color' => ['nullable', 'string', 'max:30'],
             'secondary_color' => ['nullable', 'string', 'max:30'],
             'accent_color' => ['nullable', 'string', 'max:30'],
@@ -83,6 +86,7 @@ class AdminCanteenController extends Controller
             'qr_target_url' => ['nullable', 'string', 'max:500'],
             'is_default' => ['nullable', 'boolean'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'favicon' => ['nullable', 'file', 'mimes:ico,png,svg,jpg,jpeg,webp', 'max:2048'],
             'clone_from_canteen_id' => ['nullable', 'exists:canteens,id'],
             'manager_name' => ['nullable', 'string', 'max:150'],
             'manager_email' => ['nullable', 'email', 'max:150', 'unique:users,email'],
@@ -103,6 +107,15 @@ class AdminCanteenController extends Controller
             $path = $file->storeAs('branding', $safeName, 'public');
             $validated['logo_url'] = '/storage/' . $path;
             unset($validated['logo']);
+        }
+
+        // Handle favicon file upload
+        if ($request->hasFile('favicon')) {
+            $file = $request->file('favicon');
+            $safeName = 'favicon_' . Str::slug($validated['name']) . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('branding', $safeName, 'public');
+            $validated['favicon_url'] = '/storage/' . $path;
+            unset($validated['favicon']);
         }
 
         // Set default values if not passed
@@ -221,9 +234,11 @@ class AdminCanteenController extends Controller
 
         $validated = $request->validate([
             'name' => ['nullable', 'string', 'max:150'],
+            'page_title' => ['nullable', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:150', 'unique:canteens,slug,' . $id],
             'tagline' => ['nullable', 'string', 'max:255'],
-            'logo_url' => ['nullable', 'string', 'max:500'],
+            'logo_url' => ['nullable', 'string', 'max:1000'],
+            'favicon_url' => ['nullable', 'string', 'max:1000'],
             'primary_color' => ['nullable', 'string', 'max:30'],
             'secondary_color' => ['nullable', 'string', 'max:30'],
             'accent_color' => ['nullable', 'string', 'max:30'],
@@ -249,6 +264,7 @@ class AdminCanteenController extends Controller
             'is_active' => ['nullable'],
             'is_default' => ['nullable'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'favicon' => ['nullable', 'file', 'mimes:ico,png,svg,jpg,jpeg,webp', 'max:2048'],
         ]);
 
         if ($request->hasFile('logo')) {
@@ -258,6 +274,15 @@ class AdminCanteenController extends Controller
             $path = $file->storeAs('branding', $safeName, 'public');
             $validated['logo_url'] = '/storage/' . $path;
             unset($validated['logo']);
+        }
+
+        if ($request->hasFile('favicon')) {
+            $file = $request->file('favicon');
+            $canteenName = $validated['name'] ?? $canteen->name;
+            $safeName = 'favicon_' . Str::slug($canteenName) . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('branding', $safeName, 'public');
+            $validated['favicon_url'] = '/storage/' . $path;
+            unset($validated['favicon']);
         }
 
         // Format boolean fields properly

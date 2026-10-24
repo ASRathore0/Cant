@@ -61,13 +61,15 @@ class MenuItem extends Model
             return 'MRP';
         }
 
+        $price = (float) ($this->price ?? 0);
+
         if ($this->price_type === 'range') {
-            $min = (int) $this->price == $this->price ? number_format($this->price, 0) : number_format($this->price, 2);
-            $max = $this->price_max !== null ? ((int) $this->price_max == $this->price_max ? number_format($this->price_max, 0) : number_format($this->price_max, 2)) : '';
+            $min = (int) $price == $price ? number_format($price, 0) : number_format($price, 2);
+            $max = $this->price_max !== null ? ((int) $this->price_max == $this->price_max ? number_format((float) $this->price_max, 0) : number_format((float) $this->price_max, 2)) : '';
             return '₹' . $min . ($max ? ' - ₹' . $max : '');
         }
 
-        $formatted = (int) $this->price == $this->price ? number_format($this->price, 0) : number_format($this->price, 2);
+        $formatted = (int) $price == $price ? number_format($price, 0) : number_format($price, 2);
         return '₹' . $formatted;
     }
 

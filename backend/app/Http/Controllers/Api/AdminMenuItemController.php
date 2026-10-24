@@ -96,7 +96,18 @@ class AdminMenuItemController extends Controller
         if ($request->user() && $request->user()->canteen_id) {
             $data['canteen_id'] = $request->user()->canteen_id;
         } elseif ($request->filled('canteen_id')) {
-            $data['canteen_id'] = $request->input('canteen_id');
+            $data['canteen_id'] = (int) $request->input('canteen_id');
+        } else {
+            // Inherit from category if specified
+            if (!empty($data['category_id'])) {
+                $cat = Category::find($data['category_id']);
+                if ($cat && $cat->canteen_id) {
+                    $data['canteen_id'] = $cat->canteen_id;
+                }
+            }
+            if (empty($data['canteen_id'])) {
+                $data['canteen_id'] = Canteen::getDefault()?->id ?? 1;
+            }
         }
 
         $item = MenuItem::create($data);
@@ -110,9 +121,14 @@ class AdminMenuItemController extends Controller
     /**
      * Display the specified menu item.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $item = MenuItem::with('category')->findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $item->canteen_id && $item->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized access to this entity item.'], 403);
+        }
 
         return response()->json([
             'data' => new MenuItemResource($item),
@@ -125,6 +141,12 @@ class AdminMenuItemController extends Controller
     public function update(MenuItemRequest $request, int $id): JsonResponse
     {
         $item = MenuItem::findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $item->canteen_id && $item->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized. This dish belongs to another entity.'], 403);
+        }
+
         $data = $request->validated();
         unset($data['image']);
 
@@ -156,9 +178,14 @@ class AdminMenuItemController extends Controller
     /**
      * Remove the specified menu item.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $item = MenuItem::findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $item->canteen_id && $item->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized. This dish belongs to another entity.'], 403);
+        }
 
         if ($item->image_path && !Str::startsWith($item->image_path, ['http://', 'https://'])) {
             Storage::disk('public')->delete($item->image_path);
@@ -174,9 +201,15 @@ class AdminMenuItemController extends Controller
     /**
      * Toggle item availability.
      */
-    public function toggleAvailability(int $id): JsonResponse
+    public function toggleAvailability(Request $request, int $id): JsonResponse
     {
         $item = MenuItem::findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $item->canteen_id && $item->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized. This dish belongs to another entity.'], 403);
+        }
+
         $item->is_available = !$item->is_available;
         $item->save();
 
@@ -189,9 +222,15 @@ class AdminMenuItemController extends Controller
     /**
      * Toggle featured status.
      */
-    public function toggleFeatured(int $id): JsonResponse
+    public function toggleFeatured(Request $request, int $id): JsonResponse
     {
         $item = MenuItem::findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $item->canteen_id && $item->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized. This dish belongs to another entity.'], 403);
+        }
+
         $item->is_featured = !$item->is_featured;
         $item->save();
 
@@ -212,8 +251,13 @@ class AdminMenuItemController extends Controller
             'items.*.sort_order' => 'required|integer',
         ]);
 
+        $user = $request->user();
         foreach ($request->input('items') as $orderData) {
-            MenuItem::where('id', $orderData['id'])->update(['sort_order' => $orderData['sort_order']]);
+            $q = MenuItem::where('id', $orderData['id']);
+            if ($user && $user->canteen_id) {
+                $q->where('canteen_id', $user->canteen_id);
+            }
+            $q->update(['sort_order' => $orderData['sort_order']]);
         }
 
         return response()->json([

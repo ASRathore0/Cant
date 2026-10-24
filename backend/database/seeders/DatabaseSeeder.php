@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             MenuItemSeeder::class,
             RestaurantSettingSeeder::class,
             CanteenSeeder::class,
+            MadanSweetsSeeder::class,
+            HiraSweetsSeeder::class,
         ]);
     }
 }

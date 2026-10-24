@@ -57,6 +57,28 @@ export const PublicMenuPage: React.FC = () => {
     fetchMenu();
   }, [canteenParam, isFromQr]);
 
+  // Dynamically update browser tab title and favicon for the active restaurant entity
+  useEffect(() => {
+    if (settings) {
+      if (settings.page_title) {
+        document.title = settings.page_title;
+      } else if (settings.restaurant_name) {
+        document.title = `${settings.restaurant_name} | Digital Menu`;
+      }
+
+      const fav = settings.full_favicon_url || settings.favicon_url || settings.full_logo_url || settings.logo_url;
+      if (fav) {
+        let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        link.href = fav;
+      }
+    }
+  }, [settings]);
+
   // Compute all items flattened
   const allItems = useMemo(() => {
     const list: MenuItem[] = [];

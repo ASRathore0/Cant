@@ -142,8 +142,10 @@ export const SuperAdminPage: React.FC = () => {
   // New Canteen Form
   const [newCanteenForm, setNewCanteenForm] = useState({
     name: '',
+    page_title: '',
     slug: '',
     tagline: '',
+    favicon_url: '',
     dietary_type: 'pure_veg' as Canteen['dietary_type'],
     pure_veg_label: '100% Pure Vegetarian',
     manager_name: '',
@@ -167,6 +169,8 @@ export const SuperAdminPage: React.FC = () => {
   });
   const [newLogoFile, setNewLogoFile] = useState<File | null>(null);
   const [newLogoPreview, setNewLogoPreview] = useState<string | null>(null);
+  const [newFaviconFile, setNewFaviconFile] = useState<File | null>(null);
+  const [newFaviconPreview, setNewFaviconPreview] = useState<string | null>(null);
 
   // Manager Credentials Modal State
   const [isManagerModalOpen, setIsManagerModalOpen] = useState(false);
@@ -183,9 +187,13 @@ export const SuperAdminPage: React.FC = () => {
   const [editForm, setEditForm] = useState<Partial<Canteen>>({});
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null);
+  const [editFaviconFile, setEditFaviconFile] = useState<File | null>(null);
+  const [editFaviconPreview, setEditFaviconPreview] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const newFileInputRef = useRef<HTMLInputElement | null>(null);
+  const faviconInputRef = useRef<HTMLInputElement | null>(null);
+  const newFaviconInputRef = useRef<HTMLInputElement | null>(null);
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const id = Date.now().toString();
@@ -240,6 +248,8 @@ export const SuperAdminPage: React.FC = () => {
     });
     setEditLogoFile(null);
     setEditLogoPreview(canteen.full_logo_url || canteen.logo_url || null);
+    setEditFaviconFile(null);
+    setEditFaviconPreview(canteen.full_favicon_url || canteen.favicon_url || null);
   };
 
   const handleUpdateTrioItem = (
@@ -321,6 +331,34 @@ export const SuperAdminPage: React.FC = () => {
     }
   };
 
+  const handleEditFaviconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        addToast('error', 'Favicon file must be under 2MB.');
+        return;
+      }
+      setEditFaviconFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setEditFaviconPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleNewFaviconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        addToast('error', 'Favicon file must be under 2MB.');
+        return;
+      }
+      setNewFaviconFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setNewFaviconPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const [isSavingTheme, setIsSavingTheme] = useState(false);
 
   const handleSaveThemeOnly = async () => {
@@ -390,6 +428,9 @@ export const SuperAdminPage: React.FC = () => {
       if (editLogoFile) {
         formData.append('logo', editLogoFile);
       }
+      if (editFaviconFile) {
+        formData.append('favicon', editFaviconFile);
+      }
 
       const res = await adminApi.updateCanteen(selectedCanteen.id, formData);
       addToast('success', res.message || 'Canteen branding & theme saved!');
@@ -432,6 +473,9 @@ export const SuperAdminPage: React.FC = () => {
       if (newLogoFile) {
         formData.append('logo', newLogoFile);
       }
+      if (newFaviconFile) {
+        formData.append('favicon', newFaviconFile);
+      }
 
       const res = await adminApi.createCanteen(formData);
       const newCanteen = res.data;
@@ -454,8 +498,10 @@ export const SuperAdminPage: React.FC = () => {
       // Reset form
       setNewCanteenForm({
         name: '',
+        page_title: '',
         slug: '',
         tagline: '',
+        favicon_url: '',
         dietary_type: 'pure_veg',
         pure_veg_label: '100% Pure Vegetarian',
         manager_name: '',
@@ -479,6 +525,8 @@ export const SuperAdminPage: React.FC = () => {
       });
       setNewLogoFile(null);
       setNewLogoPreview(null);
+      setNewFaviconFile(null);
+      setNewFaviconPreview(null);
 
       // Refresh list and select the new canteen
       await fetchCanteens();
@@ -986,6 +1034,20 @@ export const SuperAdminPage: React.FC = () => {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Browser Tab Title & Meta Title
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`e.g. ${newCanteenForm.name || 'Restaurant'} | Gourmet Tea, Espresso & Quick Bites`}
+                      value={newCanteenForm.page_title}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, page_title: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#075C35] text-sm"
+                    />
+                    <p className="text-[10px] text-stone-400 mt-1">Title shown in browser tabs, bookmarks, and search results</p>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1">
@@ -1187,6 +1249,35 @@ export const SuperAdminPage: React.FC = () => {
                       Browse File
                     </button>
                   </div>
+
+                  {/* Favicon Upload Box */}
+                  <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-white p-1 border-2 border-stone-300 shrink-0 flex items-center justify-center">
+                      {newFaviconPreview ? (
+                        <img src={newFaviconPreview} alt="Favicon" className="w-full h-full object-contain" />
+                      ) : (
+                        <Globe className="w-6 h-6 text-stone-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-stone-700">Browser Favicon Icon</p>
+                      <p className="text-[11px] text-stone-500">.ico, .png or .svg icon shown next to title on browser tab</p>
+                    </div>
+                    <input
+                      type="file"
+                      ref={newFaviconInputRef}
+                      accept=".ico,.png,.svg,.jpg,.jpeg,.webp"
+                      onChange={handleNewFaviconChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => newFaviconInputRef.current?.click()}
+                      className="px-3.5 py-2 bg-white text-xs font-bold text-[#075C35] border border-stone-300 rounded-xl hover:bg-stone-100 shadow-2xs"
+                    >
+                      Browse Favicon
+                    </button>
+                  </div>
                 </div>
 
                 {/* 3. Manager Credentials */}
@@ -1340,6 +1431,29 @@ export const SuperAdminPage: React.FC = () => {
                   <span className="text-[10px] uppercase font-bold text-stone-500 bg-white px-2 py-0.5 rounded-full border border-stone-200">
                     Auto Updates
                   </span>
+                </div>
+
+                {/* Simulated Browser Bar with Tab showing Favicon and Title */}
+                <div className="bg-stone-200/90 px-3 pt-2 border-b border-stone-300 flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
+                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  </div>
+                  <div className="bg-white rounded-t-lg px-2.5 py-1 flex items-center gap-1.5 shadow-2xs border-t border-x border-stone-300 text-[10px] max-w-[200px] truncate">
+                    <div className="w-3.5 h-3.5 rounded shrink-0 overflow-hidden flex items-center justify-center">
+                      {newFaviconPreview ? (
+                        <img src={newFaviconPreview} alt="Favicon" className="w-full h-full object-contain" />
+                      ) : newLogoPreview ? (
+                        <img src={newLogoPreview} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <Globe className="w-3.5 h-3.5 text-stone-400" />
+                      )}
+                    </div>
+                    <span className="truncate font-semibold text-stone-700">
+                      {newCanteenForm.page_title || `${newCanteenForm.name || 'New Outlet'} | Digital Menu`}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Simulated Customer Header */}
@@ -1790,6 +1904,65 @@ export const SuperAdminPage: React.FC = () => {
                   />
                 </div>
 
+                {/* Entity Browser Title */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-stone-700">
+                      Browser Tab Title & Meta Title
+                    </label>
+                    <span className="text-[10px] text-stone-400 font-medium">Customer Browser Tab</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={editForm.page_title || ''}
+                    onChange={(e) => setEditForm({ ...editForm, page_title: e.target.value })}
+                    placeholder={`e.g. ${editForm.name || 'Restaurant'} | Gourmet Dining & Quick Bites`}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#075C35] text-sm"
+                  />
+                  <p className="text-[11px] text-stone-400 mt-1">
+                    Custom title displayed on browser tabs, bookmarks, and search result headers.
+                  </p>
+                </div>
+
+                {/* Favicon Upload Box */}
+                <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white p-2 border-2 border-stone-300 shadow-xs shrink-0 flex items-center justify-center">
+                    {editFaviconPreview ? (
+                      <img src={editFaviconPreview} alt="Favicon" className="w-full h-full object-contain" />
+                    ) : editLogoPreview ? (
+                      <img src={editLogoPreview} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      <Globe className="w-7 h-7 text-stone-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="text-xs font-bold text-stone-800">Browser Favicon Icon</p>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
+                      Square icon shown on customer browser tabs (.ico, .png, .svg). Recommended 32x32 or 64x64px.
+                    </p>
+                    {editForm.favicon_url && (
+                      <p className="text-[10px] text-stone-400 font-mono truncate max-w-xs mt-0.5">
+                        Current: {editForm.favicon_url}
+                      </p>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    ref={faviconInputRef}
+                    accept=".ico,.png,.svg,.jpg,.jpeg,.webp"
+                    onChange={handleEditFaviconChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => faviconInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-stone-100 text-[#075C35] border border-stone-300 rounded-xl text-xs font-bold transition-colors shrink-0 shadow-2xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Favicon</span>
+                  </button>
+                </div>
+
                 {/* Logo Upload Box */}
                 <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 flex flex-col sm:flex-row items-center gap-4">
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-white p-1 border-2 border-[#E8C928] shadow-xs shrink-0 flex items-center justify-center">
@@ -2188,6 +2361,29 @@ export const SuperAdminPage: React.FC = () => {
               style={{ backgroundColor: previewBg }}
             >
               <div className="relative rounded-[28px] overflow-hidden bg-white shadow-inner min-h-[580px] flex flex-col justify-between">
+                {/* Simulated Browser Bar with Tab showing Favicon and Title */}
+                <div className="bg-stone-200/90 px-3 pt-2 border-b border-stone-300 flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
+                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  </div>
+                  <div className="bg-white rounded-t-lg px-2.5 py-1 flex items-center gap-1.5 shadow-2xs border-t border-x border-stone-300 text-[10px] max-w-[200px] truncate">
+                    <div className="w-3.5 h-3.5 rounded shrink-0 overflow-hidden flex items-center justify-center">
+                      {editFaviconPreview ? (
+                        <img src={editFaviconPreview} alt="Favicon" className="w-full h-full object-contain" />
+                      ) : editLogoPreview ? (
+                        <img src={editLogoPreview} alt="Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <Globe className="w-3.5 h-3.5 text-stone-400" />
+                      )}
+                    </div>
+                    <span className="truncate font-semibold text-stone-700">
+                      {editForm.page_title || `${previewName} | Digital Menu`}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Simulated Header */}
                 <div
                   className="px-4 py-3 text-white transition-colors duration-300 border-b border-black/10"

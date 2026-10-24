@@ -56,6 +56,18 @@ if ($action) {
                 Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'CanteenSeeder', '--force' => true]);
                 $output = Illuminate\Support\Facades\Artisan::output();
                 break;
+            case 'seed_madan':
+                Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'MadanSweetsSeeder', '--force' => true]);
+                $output = Illuminate\Support\Facades\Artisan::output();
+                break;
+            case 'seed_hira':
+                Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'HiraSweetsSeeder', '--force' => true]);
+                $output = Illuminate\Support\Facades\Artisan::output();
+                break;
+            case 'seed_all':
+                Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+                $output = Illuminate\Support\Facades\Artisan::output();
+                break;
             case 'storage_link':
                 Illuminate\Support\Facades\Artisan::call('storage:link');
                 $output = Illuminate\Support\Facades\Artisan::output();
@@ -119,6 +131,15 @@ if ($action) {
             </a>
             <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=seed_canteens" class="btn btn-secondary">
                 🏪 Seed Default Canteens
+            </a>
+            <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=seed_all" class="btn btn-primary" style="background: #10b981; color: #fff;">
+                🌱 Seed All Entities & Menu Data
+            </a>
+            <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=seed_madan" class="btn btn-secondary">
+                🍬 Seed Madan Sweets & Restaurant
+            </a>
+            <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=seed_hira" class="btn btn-secondary">
+                ✨ Seed Hira Sweets (Est. 1912)
             </a>
             <a href="?secret=<?= htmlspecialchars($passedSecret) ?>&action=optimize" class="btn btn-secondary">
                 🚀 Cache Config & Routes

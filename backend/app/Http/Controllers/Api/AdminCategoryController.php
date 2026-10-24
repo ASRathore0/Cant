@@ -49,7 +49,9 @@ class AdminCategoryController extends Controller
         if ($request->user() && $request->user()->canteen_id) {
             $data['canteen_id'] = $request->user()->canteen_id;
         } elseif ($request->filled('canteen_id')) {
-            $data['canteen_id'] = $request->input('canteen_id');
+            $data['canteen_id'] = (int) $request->input('canteen_id');
+        } else {
+            $data['canteen_id'] = Canteen::getDefault()?->id ?? 1;
         }
 
         $category = Category::create($data);
@@ -63,9 +65,14 @@ class AdminCategoryController extends Controller
     /**
      * Display the specified category.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $category = Category::withCount('menuItems')->findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $category->canteen_id && $category->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized access to this entity category.'], 403);
+        }
 
         return response()->json([
             'data' => new CategoryResource($category),
@@ -78,6 +85,12 @@ class AdminCategoryController extends Controller
     public function update(CategoryRequest $request, int $id): JsonResponse
     {
         $category = Category::findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $category->canteen_id && $category->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized. This category belongs to another entity.'], 403);
+        }
+
         $data = $request->validated();
 
         if (isset($data['name']) && empty($data['slug'])) {
@@ -96,9 +109,14 @@ class AdminCategoryController extends Controller
      * Remove the specified category.
      * Prevents deleting categories that still contain items.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $category = Category::withCount('menuItems')->findOrFail($id);
+
+        $user = $request->user();
+        if ($user && $user->canteen_id && $category->canteen_id && $category->canteen_id !== $user->canteen_id) {
+            return response()->json(['message' => 'Unauthorized. This category belongs to another entity.'], 403);
+        }
 
         if ($category->menu_items_count > 0) {
             return response()->json([
@@ -125,8 +143,13 @@ class AdminCategoryController extends Controller
             'categories.*.sort_order' => 'required|integer',
         ]);
 
+        $user = $request->user();
         foreach ($request->input('categories') as $orderData) {
-            Category::where('id', $orderData['id'])->update(['sort_order' => $orderData['sort_order']]);
+            $q = Category::where('id', $orderData['id']);
+            if ($user && $user->canteen_id) {
+                $q->where('canteen_id', $user->canteen_id);
+            }
+            $q->update(['sort_order' => $orderData['sort_order']]);
         }
 
         return response()->json([
