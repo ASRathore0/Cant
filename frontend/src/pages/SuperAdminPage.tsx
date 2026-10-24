@@ -27,9 +27,13 @@ import {
   Info,
   X,
   FileText,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Users,
+  Key,
+  Lock,
+  User as UserIcon,
 } from 'lucide-react';
-import { AdminLayout } from '../components/AdminLayout';
+import { SuperAdminLayout } from '../components/SuperAdminLayout';
 import { Toast, ToastMessage } from '../components/Toast';
 import { adminApi, publicApi } from '../services/api';
 import { Canteen, HeroTrioItem } from '../types';
@@ -134,6 +138,9 @@ export const SuperAdminPage: React.FC = () => {
     tagline: '',
     dietary_type: 'pure_veg' as Canteen['dietary_type'],
     pure_veg_label: '100% Pure Vegetarian',
+    manager_name: '',
+    manager_email: '',
+    manager_password: '',
     address: '',
     location_landmark: '',
     phone: '',
@@ -152,6 +159,17 @@ export const SuperAdminPage: React.FC = () => {
   });
   const [newLogoFile, setNewLogoFile] = useState<File | null>(null);
   const [newLogoPreview, setNewLogoPreview] = useState<string | null>(null);
+
+  // Manager Credentials Modal State
+  const [isManagerModalOpen, setIsManagerModalOpen] = useState(false);
+  const [managerTargetCanteen, setManagerTargetCanteen] = useState<Canteen | null>(null);
+  const [managerForm, setManagerForm] = useState({
+    manager_id: undefined as number | undefined,
+    name: '',
+    email: '',
+    password: '',
+  });
+  const [isSavingManager, setIsSavingManager] = useState(false);
 
   // Studio Edit Form
   const [editForm, setEditForm] = useState<Partial<Canteen>>({});
@@ -386,6 +404,9 @@ export const SuperAdminPage: React.FC = () => {
         tagline: '',
         dietary_type: 'pure_veg',
         pure_veg_label: '100% Pure Vegetarian',
+        manager_name: '',
+        manager_email: '',
+        manager_password: '',
         address: '',
         location_landmark: '',
         phone: '',
@@ -414,6 +435,36 @@ export const SuperAdminPage: React.FC = () => {
       addToast('error', msg);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleOpenManagerModal = (canteen: Canteen) => {
+    setManagerTargetCanteen(canteen);
+    const existingManager = canteen.managers && canteen.managers.length > 0 ? canteen.managers[0] : null;
+    setManagerForm({
+      manager_id: existingManager ? existingManager.id : undefined,
+      name: existingManager ? existingManager.name : (canteen.name + ' Manager'),
+      email: existingManager ? existingManager.email : '',
+      password: '',
+    });
+    setIsManagerModalOpen(true);
+  };
+
+  const handleSaveManager = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managerTargetCanteen) return;
+    setIsSavingManager(true);
+    try {
+      const res = await adminApi.upsertCanteenManager(managerTargetCanteen.id, managerForm);
+      addToast('success', res.message || 'Manager credentials updated successfully!');
+      setIsManagerModalOpen(false);
+      await fetchCanteens();
+    } catch (err: any) {
+      console.error('Failed to save manager:', err);
+      const msg = err.response?.data?.message || 'Failed to save manager credentials.';
+      addToast('error', msg);
+    } finally {
+      setIsSavingManager(false);
     }
   };
 
@@ -480,9 +531,19 @@ export const SuperAdminPage: React.FC = () => {
   const previewAddress = editForm.location_landmark || editForm.address || 'Basement Parking, City Food Mall';
 
   return (
-    <AdminLayout
-      title="Super Admin — Canteen Network & Theme Studio"
-      subtitle="Onboard multiple canteens, customize themes, colors, logos, names, addresses & manage digital menus"
+    <SuperAdminLayout
+      activeSection={activeTab === 'network' ? 'directory' : (activeTab as any)}
+      onSelectSection={(s) => {
+        if (s === 'onboard') {
+          setIsOnboardModalOpen(true);
+        } else if (s === 'directory') {
+          setActiveTab('network');
+        } else if (s === 'studio') {
+          setActiveTab('studio');
+        }
+      }}
+      title="Super Admin Master Control Hub"
+      subtitle="Onboard new venues, generate manager accounts, customize themes, body styles and live slidable hero stickers"
     >
       <Toast toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
 
@@ -638,6 +699,30 @@ export const SuperAdminPage: React.FC = () => {
                           <div className="w-4 h-4 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: canteen.bg_color }} title="Background" />
                         </div>
                       </div>
+
+                      {/* Assigned Manager */}
+                      <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                        <span className="text-stone-400 font-medium">Manager:</span>
+                        {canteen.managers && canteen.managers.length > 0 ? (
+                          <button
+                            onClick={() => handleOpenManagerModal(canteen)}
+                            className="inline-flex items-center gap-1 text-[#075C35] font-semibold hover:underline"
+                            title="Manage manager account"
+                          >
+                            <UserIcon className="w-3 h-3 text-[#075C35]" />
+                            <span className="truncate max-w-[130px]">{canteen.managers[0].email}</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleOpenManagerModal(canteen)}
+                            className="inline-flex items-center gap-1 text-amber-600 font-semibold hover:underline"
+                            title="Assign a manager account"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Manager</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -648,26 +733,46 @@ export const SuperAdminPage: React.FC = () => {
                       className="inline-flex items-center gap-1.5 text-xs font-bold text-[#075C35] hover:text-[#04281B] transition-colors"
                     >
                       <Palette className="w-3.5 h-3.5" />
-                      <span>Customize Studio</span>
+                      <span>Studio</span>
                     </button>
 
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenManagerModal(canteen)}
+                        className="p-1.5 text-stone-500 hover:text-emerald-700 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-stone-200"
+                        title="Manage Manager Credentials (Email & Password)"
+                      >
+                        <Key className="w-3.5 h-3.5 text-stone-600 hover:text-emerald-700" />
+                      </button>
+
                       <a
-                        href={`/menu?canteen=${canteen.slug}`}
+                        href={`/c/${canteen.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-1.5 text-stone-500 hover:text-[#063D29] hover:bg-white rounded-lg transition-colors border border-transparent hover:border-stone-200"
-                        title="View Public Menu"
+                        title={`Open Customer Menu (/c/${canteen.slug})`}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
+
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/c/${canteen.slug}`;
+                          navigator.clipboard.writeText(url);
+                          addToast('info', `Copied link: ${url}`);
+                        }}
+                        className="p-1.5 text-stone-500 hover:text-[#063D29] hover:bg-white rounded-lg transition-colors border border-transparent hover:border-stone-200"
+                        title="Copy Customer Menu Link"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
 
                       <button
                         onClick={() => handleOpenCloneModal(canteen)}
                         className="p-1.5 text-stone-500 hover:text-blue-600 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-stone-200"
                         title="Clone Menu from Another Canteen"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3.5 h-3.5 text-blue-500" />
                       </button>
 
                       {!canteen.is_default && (
@@ -1700,6 +1805,77 @@ export const SuperAdminPage: React.FC = () => {
                 />
               </div>
 
+              {/* Manager Account Setup */}
+              <div className="bg-[#0F172A] text-white p-4 rounded-2xl border border-slate-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserIcon className="w-4 h-4 text-[#10B981]" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#34D399]">
+                      Restaurant / Cafe Manager Account
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-semibold">
+                    Dedicated Login
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  Create manager login credentials. This manager will log in at <code className="text-emerald-400">/admin/login</code> to manage only this venue's dishes & categories.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                      Manager Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Rahul Sharma"
+                      value={newCanteenForm.manager_name}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, manager_name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#10B981] text-xs text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                      Manager Email *
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="e.g. manager@chaibytes.com"
+                      value={newCanteenForm.manager_email}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, manager_email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#10B981] text-xs text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-semibold text-slate-300">
+                      Initial Password *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const randomPass = 'Cafe@' + Math.floor(1000 + Math.random() * 9000);
+                        setNewCanteenForm({ ...newCanteenForm, manager_password: randomPass });
+                      }}
+                      className="text-[10px] text-[#34D399] hover:underline font-bold"
+                    >
+                      Generate Password
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Cafe@2026"
+                    value={newCanteenForm.manager_password}
+                    onChange={(e) => setNewCanteenForm({ ...newCanteenForm, manager_password: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#10B981] text-xs text-white font-mono"
+                  />
+                </div>
+              </div>
+
               {/* Clone Menu Option */}
               <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-start gap-3">
                 <input
@@ -1803,6 +1979,109 @@ export const SuperAdminPage: React.FC = () => {
           </div>
         </div>
       )}
-    </AdminLayout>
+
+      {/* ========================================================================= */}
+      {/* MODAL: MANAGE MANAGER CREDENTIALS                                         */}
+      {/* ========================================================================= */}
+      {isManagerModalOpen && managerTargetCanteen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#10B981]/20 flex items-center justify-center">
+                  <Key className="w-4 h-4 text-[#075C35]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#20251F]">
+                    Manager Account
+                  </h3>
+                  <p className="text-[11px] text-stone-500">{managerTargetCanteen.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsManagerModalOpen(false)}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveManager} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Manager Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={managerForm.name}
+                  onChange={(e) => setManagerForm({ ...managerForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#075C35]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Login Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={managerForm.email}
+                  onChange={(e) => setManagerForm({ ...managerForm, email: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#075C35]"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-stone-700">
+                    {managerForm.manager_id ? 'Reset Password (Leave blank to keep current)' : 'Initial Password *'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const randomPass = 'Cafe@' + Math.floor(1000 + Math.random() * 9000);
+                      setManagerForm({ ...managerForm, password: randomPass });
+                    }}
+                    className="text-[10px] text-[#075C35] hover:underline font-bold"
+                  >
+                    Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder={managerForm.manager_id ? 'Enter new password to change' : 'e.g. Cafe@2026'}
+                  value={managerForm.password}
+                  onChange={(e) => setManagerForm({ ...managerForm, password: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#075C35]"
+                />
+              </div>
+
+              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-500">
+                This manager logs in at <strong className="text-stone-800">/admin/login</strong> and has administrative control strictly over <strong>{managerTargetCanteen.name}</strong>.
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setIsManagerModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingManager}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#075C35] hover:bg-[#063D29] transition-all disabled:opacity-50"
+                >
+                  {isSavingManager ? 'Saving...' : 'Save Credentials'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </SuperAdminLayout>
   );
 };

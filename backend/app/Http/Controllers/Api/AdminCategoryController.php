@@ -15,11 +15,18 @@ class AdminCategoryController extends Controller
     /**
      * Display a listing of categories with item counts.
      */
-    public function index(): JsonResponse
+    public function index(\Illuminate\Http\Request $request): JsonResponse
     {
-        $categories = Category::withCount('menuItems')
-            ->orderBy('sort_order', 'asc')
-            ->get();
+        $query = Category::withCount('menuItems');
+
+        $user = $request->user();
+        if ($user && $user->canteen_id) {
+            $query->where('canteen_id', $user->canteen_id);
+        } elseif ($canteenId = $request->input('canteen_id')) {
+            $query->where('canteen_id', $canteenId);
+        }
+
+        $categories = $query->orderBy('sort_order', 'asc')->get();
 
         return response()->json([
             'data' => CategoryResource::collection($categories),
@@ -37,6 +44,12 @@ class AdminCategoryController extends Controller
         }
         if (!isset($data['sort_order'])) {
             $data['sort_order'] = Category::max('sort_order') + 1;
+        }
+
+        if ($request->user() && $request->user()->canteen_id) {
+            $data['canteen_id'] = $request->user()->canteen_id;
+        } elseif ($request->filled('canteen_id')) {
+            $data['canteen_id'] = $request->input('canteen_id');
         }
 
         $category = Category::create($data);

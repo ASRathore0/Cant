@@ -25,6 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'canteen_id',
     ];
 
     /**
@@ -48,5 +49,20 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function canteen(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Canteen::class);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return in_array($this->role, ['super_admin', 'superadmin']);
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
     }
 }

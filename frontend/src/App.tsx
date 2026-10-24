@@ -10,8 +10,11 @@ import { AdminSettingsPage } from './pages/AdminSettingsPage';
 import { SuperAdminPage } from './pages/SuperAdminPage';
 
 // Protected Route Guard
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+const ProtectedRoute: React.FC<{ children: React.ReactNode; requireSuperAdmin?: boolean }> = ({
+  children,
+  requireSuperAdmin = false,
+}) => {
+  const { isAuthenticated, isSuperAdmin, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -25,6 +28,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/admin/login" replace />;
   }
 
+  if (requireSuperAdmin && !isSuperAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -32,14 +39,29 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <Routes>
-        {/* Public Routes */}
+        {/* Public Customer Routes */}
         <Route path="/" element={<Navigate to="/menu" replace />} />
         <Route path="/menu" element={<PublicMenuPage />} />
+        <Route path="/c/:slug" element={<PublicMenuPage />} />
 
         {/* Admin Authentication */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
 
-        {/* Protected Admin Routes */}
+        {/* Dedicated Enterprise Super Admin Portal */}
+        <Route
+          path="/super-admin"
+          element={
+            <ProtectedRoute requireSuperAdmin>
+              <SuperAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/super-admin/*"
+          element={<Navigate to="/super-admin" replace />}
+        />
+
+        {/* Protected Restaurant Manager Routes */}
         <Route
           path="/admin"
           element={<Navigate to="/admin/dashboard" replace />}
@@ -78,15 +100,11 @@ export const App: React.FC = () => {
         />
         <Route
           path="/admin/canteens"
-          element={
-            <ProtectedRoute>
-              <SuperAdminPage />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/super-admin" replace />}
         />
         <Route
           path="/admin/super-admin"
-          element={<Navigate to="/admin/canteens" replace />}
+          element={<Navigate to="/super-admin" replace />}
         />
 
         {/* Fallback */}

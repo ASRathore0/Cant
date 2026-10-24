@@ -60,6 +60,11 @@ class Canteen extends Model
         return $this->hasMany(MenuItem::class);
     }
 
+    public function managers(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     /**
      * Get the formatted full logo URL.
      */

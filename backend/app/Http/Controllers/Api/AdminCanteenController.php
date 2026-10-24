@@ -7,6 +7,7 @@ use App\Models\Canteen;
 use App\Models\Category;
 use App\Models\MenuItem;
 use App\Models\RestaurantSetting;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ class AdminCanteenController extends Controller
     public function index(): JsonResponse
     {
         $canteens = Canteen::withCount(['categories', 'menuItems'])
+            ->with(['managers:id,name,email,role,canteen_id,created_at'])
             ->orderBy('is_default', 'desc')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -82,6 +84,9 @@ class AdminCanteenController extends Controller
             'is_default' => ['nullable', 'boolean'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
             'clone_from_canteen_id' => ['nullable', 'exists:canteens,id'],
+            'manager_name' => ['nullable', 'string', 'max:150'],
+            'manager_email' => ['nullable', 'email', 'max:150', 'unique:users,email'],
+            'manager_password' => ['nullable', 'string', 'min:6'],
         ]);
 
         // Generate slug if not provided
@@ -123,7 +128,25 @@ class AdminCanteenController extends Controller
         $cloneFromId = $validated['clone_from_canteen_id'] ?? null;
         unset($validated['clone_from_canteen_id']);
 
+        $managerName = $validated['manager_name'] ?? null;
+        $managerEmail = $validated['manager_email'] ?? null;
+        $managerPassword = $validated['manager_password'] ?? null;
+        unset($validated['manager_name'], $validated['manager_email'], $validated['manager_password']);
+
         $canteen = Canteen::create($validated);
+
+        // Create manager account if provided
+        $manager = null;
+        if (!empty($managerEmail)) {
+            $manager = User::create([
+                'name' => $managerName ?: ($canteen->name . ' Manager'),
+                'email' => $managerEmail,
+                'password' => $managerPassword ?: 'Password@123',
+                'role' => 'manager',
+                'canteen_id' => $canteen->id,
+                'email_verified_at' => now(),
+            ]);
+        }
 
         // Optionally clone menu from another canteen
         if ($cloneFromId) {
@@ -131,11 +154,62 @@ class AdminCanteenController extends Controller
         }
 
         return response()->json([
-            'message' => "Canteen '{$canteen->name}' onboarded successfully!",
+            'message' => "Establishment '{$canteen->name}' onboarded successfully!",
             'canteen' => array_merge($canteen->toArray(), [
                 'full_logo_url' => $canteen->full_logo_url,
+                'managers' => $manager ? [$manager] : [],
             ]),
         ], 201);
+    }
+
+    /**
+     * Create or update a manager account for a canteen.
+     */
+    public function upsertManager(Request $request, int $id): JsonResponse
+    {
+        $canteen = Canteen::findOrFail($id);
+
+        $validated = $request->validate([
+            'manager_id' => ['nullable', 'exists:users,id'],
+            'name' => ['required', 'string', 'max:150'],
+            'email' => ['required', 'email', 'max:150'],
+            'password' => ['nullable', 'string', 'min:6'],
+        ]);
+
+        if (!empty($validated['manager_id'])) {
+            $manager = User::where('canteen_id', $canteen->id)->findOrFail($validated['manager_id']);
+            $manager->name = $validated['name'];
+            $manager->email = $validated['email'];
+            if (!empty($validated['password'])) {
+                $manager->password = $validated['password'];
+            }
+            $manager->save();
+        } else {
+            $existing = User::where('email', $validated['email'])->first();
+            if ($existing) {
+                return response()->json(['message' => 'A user with this email already exists.'], 422);
+            }
+
+            $manager = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => $validated['password'] ?: 'Password@123',
+                'role' => 'manager',
+                'canteen_id' => $canteen->id,
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Manager account updated successfully!',
+            'manager' => [
+                'id' => $manager->id,
+                'name' => $manager->name,
+                'email' => $manager->email,
+                'role' => $manager->role,
+                'canteen_id' => $manager->canteen_id,
+            ],
+        ]);
     }
 
     /**

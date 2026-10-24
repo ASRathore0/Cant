@@ -294,5 +294,13 @@ export const adminApi = {
     });
     return res.data;
   },
+
+  upsertCanteenManager: async (canteenId: number, data: { manager_id?: number; name: string; email: string; password?: string }) => {
+    const res = await apiClient.post<{
+      message: string;
+      manager: any;
+    }>(`/admin/canteens/${canteenId}/manager`, data);
+    return res.data;
+  },
 };
 

@@ -33,11 +33,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
     navigate('/admin/login');
   };
 
+  const isSuperAdminUser = user?.role === 'super_admin' || user?.role === 'superadmin';
+
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Menu Items', path: '/admin/menu', icon: UtensilsCrossed },
     { name: 'Categories', path: '/admin/categories', icon: FolderTree },
-    { name: 'Super Admin & Canteens', path: '/admin/canteens', icon: Building2 },
+    ...(isSuperAdminUser ? [
+      { name: 'Super Admin Portal', path: '/super-admin', icon: Building2 }
+    ] : []),
     { name: 'Settings & QR', path: '/admin/settings', icon: Settings },
   ];
 

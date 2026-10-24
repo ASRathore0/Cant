@@ -23,7 +23,11 @@ export const AdminLoginPage: React.FC = () => {
     try {
       const response = await authApi.login({ email, password });
       login(response.token, response.user);
-      navigate('/admin/dashboard');
+      if (response.user.role === 'super_admin' || response.user.role === 'superadmin') {
+        navigate('/super-admin', { replace: true });
+      } else {
+        navigate('/admin/dashboard', { replace: true });
+      }
     } catch (err: any) {
       if (err.response) {
         if (err.response.status === 429) {

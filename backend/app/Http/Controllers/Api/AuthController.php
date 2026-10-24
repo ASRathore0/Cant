@@ -47,6 +47,8 @@ class AuthController extends Controller
 
         $token = $user->createToken('annapoorna-admin-token')->plainTextToken;
 
+        $canteen = $user->canteen;
+
         return response()->json([
             'message' => 'Login successful',
             'token' => $token,
@@ -55,6 +57,13 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'canteen_id' => $user->canteen_id,
+                'canteen' => $canteen ? [
+                    'id' => $canteen->id,
+                    'name' => $canteen->name,
+                    'slug' => $canteen->slug,
+                    'logo_url' => $canteen->full_logo_url,
+                ] : null,
             ],
         ]);
     }
@@ -77,6 +86,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
+        $canteen = $user->canteen;
 
         return response()->json([
             'user' => [
@@ -84,6 +94,13 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'canteen_id' => $user->canteen_id,
+                'canteen' => $canteen ? [
+                    'id' => $canteen->id,
+                    'name' => $canteen->name,
+                    'slug' => $canteen->slug,
+                    'logo_url' => $canteen->full_logo_url,
+                ] : null,
             ],
         ]);
     }

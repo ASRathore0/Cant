@@ -33,6 +33,14 @@ class AdminMenuItemController extends Controller
             $query->where('category_id', $categoryId);
         }
 
+        // Scope to manager's canteen or requested canteen
+        $user = $request->user();
+        if ($user && $user->canteen_id) {
+            $query->where('canteen_id', $user->canteen_id);
+        } elseif ($canteenId = $request->input('canteen_id')) {
+            $query->where('canteen_id', $canteenId);
+        }
+
         // Filter by availability
         if ($request->has('is_available') && $request->input('is_available') !== '') {
             $query->where('is_available', filter_var($request->input('is_available'), FILTER_VALIDATE_BOOLEAN));
@@ -84,6 +92,13 @@ class AdminMenuItemController extends Controller
         }
 
         $data['slug'] = Str::slug($data['name']);
+        
+        if ($request->user() && $request->user()->canteen_id) {
+            $data['canteen_id'] = $request->user()->canteen_id;
+        } elseif ($request->filled('canteen_id')) {
+            $data['canteen_id'] = $request->input('canteen_id');
+        }
+
         $item = MenuItem::create($data);
 
         return response()->json([

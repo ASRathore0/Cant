@@ -16,9 +16,9 @@ class AdminUserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@annapoornacanteen.com'],
             [
-                'name' => 'Annapoorna Admin',
+                'name' => 'Annapoorna Super Admin',
                 'password' => 'Annapoorna@2026',
-                'role' => 'admin',
+                'role' => 'super_admin',
                 'email_verified_at' => now(),
             ]
         );

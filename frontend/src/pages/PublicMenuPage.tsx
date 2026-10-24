@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams } from 'react-router-dom';
 import { Search, X, RefreshCw, AlertCircle, Utensils, Sparkles, Phone, MessageCircle, ChevronDown, ChevronUp, Compass, ArrowRight } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Hero } from '../components/Hero';
@@ -13,6 +13,7 @@ import { publicApi } from '../services/api';
 import { Category, MenuItem, RestaurantSettings, Canteen } from '../types';
 
 export const PublicMenuPage: React.FC = () => {
+  const { slug } = useParams<{ slug?: string }>();
   const [searchParams] = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
@@ -30,7 +31,7 @@ export const PublicMenuPage: React.FC = () => {
   const [isMenuSheetOpen, setIsMenuSheetOpen] = useState(false);
 
   const isFromQr = searchParams.get('from_qr') === '1' || searchParams.get('qr') === '1';
-  const canteenParam = searchParams.get('canteen');
+  const canteenParam = slug || searchParams.get('canteen');
 
   const fetchMenu = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) {

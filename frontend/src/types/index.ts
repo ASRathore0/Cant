@@ -64,6 +64,7 @@ export interface Canteen {
   qr_target_url: string | null;
   is_active: boolean;
   is_default: boolean;
+  managers?: Array<{ id: number; name: string; email: string; role: string; created_at?: string }>;
   categories_count?: number;
   menu_items_count?: number;
   created_at?: string;
@@ -117,7 +118,14 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: string;
+  role: 'super_admin' | 'admin' | 'manager' | string;
+  canteen_id?: number | null;
+  canteen?: {
+    id: number;
+    name: string;
+    slug: string;
+    logo_url?: string;
+  } | null;
 }
 
 export interface DashboardMetrics {
