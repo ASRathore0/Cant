@@ -139,6 +139,10 @@ export const AdminLoginPage: React.FC = () => {
               <code className="text-[#075C35] font-semibold bg-[#FAF8F1] px-1.5 py-0.5 rounded border border-[#E3E0D6]">
                 admin@annapoornacanteen.com
               </code>
+              <span className="mx-1.5 text-stone-400">|</span>
+              <code className="text-[#075C35] font-semibold bg-[#FAF8F1] px-1.5 py-0.5 rounded border border-[#E3E0D6]">
+                Annapoorna@2026
+              </code>
             </p>
           </div>
         </div>
