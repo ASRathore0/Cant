@@ -22,5 +22,15 @@ class AdminUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'admin@canteen.com'],
+            [
+                'name' => 'Platform Super Admin',
+                'password' => 'Annapoorna@2026',
+                'role' => 'super_admin',
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

@@ -240,14 +240,14 @@ class AdminCanteenController extends Controller
             'hero_subheading' => ['nullable', 'string', 'max:1000'],
             'hero_badge' => ['nullable', 'string', 'max:100'],
             'hero_trio' => ['nullable'],
-            'announcement_enabled' => ['nullable', 'in:0,1,true,false'],
+            'announcement_enabled' => ['nullable'],
             'announcement_text' => ['nullable', 'string', 'max:500'],
-            'discount_badge_enabled' => ['nullable', 'in:0,1,true,false'],
+            'discount_badge_enabled' => ['nullable'],
             'discount_badge_title' => ['nullable', 'string', 'max:100'],
             'discount_badge_text' => ['nullable', 'string', 'max:500'],
             'qr_target_url' => ['nullable', 'string', 'max:500'],
-            'is_active' => ['nullable', 'in:0,1,true,false'],
-            'is_default' => ['nullable', 'in:0,1,true,false'],
+            'is_active' => ['nullable'],
+            'is_default' => ['nullable'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ]);
 

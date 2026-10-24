@@ -36,7 +36,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
+      if (
+        (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/super-admin')) &&
+        window.location.pathname !== '/admin/login'
+      ) {
         localStorage.removeItem('annapoorna_token');
         localStorage.removeItem('annapoorna_user');
         window.location.href = '/admin/login';
@@ -257,14 +260,15 @@ export const adminApi = {
     };
   },
 
-  updateCanteen: async (id: number, formData: FormData) => {
+  updateCanteen: async (id: number, data: FormData | Record<string, any>) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
     const res = await apiClient.post<{
       message: string;
       canteen?: Canteen;
       data?: Canteen;
-    }>(`/admin/canteens/${id}`, formData, {
+    }>(`/admin/canteens/${id}`, data, isFormData ? {
       headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    } : undefined);
     return {
       message: res.data.message,
       data: (res.data.canteen || res.data.data) as Canteen,
