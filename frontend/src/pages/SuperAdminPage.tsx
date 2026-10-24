@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Building2,
+  Building,
   Plus,
   Palette,
   Sparkles,
   Check,
   CheckCircle2,
+  CheckCheck,
   Copy,
   ExternalLink,
   Trash2,
@@ -24,6 +26,8 @@ import {
   Sliders,
   Layers,
   ArrowRight,
+  ArrowLeft,
+  Search,
   Info,
   X,
   FileText,
@@ -116,10 +120,14 @@ const THEME_PRESETS: ThemePreset[] = [
   },
 ];
 
+export type SuperAdminTab = 'network' | 'onboard' | 'studio' | 'managers';
+
 export const SuperAdminPage: React.FC = () => {
   const [canteens, setCanteens] = useState<Canteen[]>([]);
   const [selectedCanteen, setSelectedCanteen] = useState<Canteen | null>(null);
-  const [activeTab, setActiveTab] = useState<'network' | 'studio'>('network');
+  const [activeTab, setActiveTab] = useState<SuperAdminTab>('network');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [copiedPass, setCopiedPass] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -530,16 +538,41 @@ export const SuperAdminPage: React.FC = () => {
   const previewHeroHeading = editForm.hero_heading || 'Good Food. Made Fresh. Served with Respect.';
   const previewAddress = editForm.location_landmark || editForm.address || 'Basement Parking, City Food Mall';
 
+  const filteredCanteens = canteens.filter((c) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.slug.toLowerCase().includes(q) ||
+      (c.address && c.address.toLowerCase().includes(q)) ||
+      (c.tagline && c.tagline.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <SuperAdminLayout
-      activeSection={activeTab === 'network' ? 'directory' : (activeTab as any)}
+      activeSection={
+        activeTab === 'network'
+          ? 'directory'
+          : activeTab === 'onboard'
+          ? 'onboard'
+          : activeTab === 'studio'
+          ? 'studio'
+          : 'managers'
+      }
       onSelectSection={(s) => {
-        if (s === 'onboard') {
-          setIsOnboardModalOpen(true);
-        } else if (s === 'directory') {
+        if (s === 'directory') {
           setActiveTab('network');
+          setIsOnboardModalOpen(false);
+        } else if (s === 'onboard') {
+          setActiveTab('onboard');
+          setIsOnboardModalOpen(false);
         } else if (s === 'studio') {
           setActiveTab('studio');
+          setIsOnboardModalOpen(false);
+        } else if (s === 'managers') {
+          setActiveTab('managers');
+          setIsOnboardModalOpen(false);
         }
       }}
       title="Super Admin Master Control Hub"
@@ -547,47 +580,34 @@ export const SuperAdminPage: React.FC = () => {
     >
       <Toast toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
 
-      {/* Top Action & Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2 p-1 bg-white rounded-2xl border border-[#E3E0D6] shadow-xs">
-          <button
-            onClick={() => setActiveTab('network')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeTab === 'network'
-                ? 'bg-[#063D29] text-white shadow-sm'
-                : 'text-[#72776F] hover:text-[#20251F] hover:bg-stone-50'
-            }`}
-          >
-            <Building2 className="w-4 h-4 text-[#E8C928]" />
-            <span>Canteen Network ({canteens.length})</span>
-          </button>
+      {/* Top Search & Filter Bar (shown on Directory tab) */}
+      {activeTab === 'network' && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search establishments by name, slug or city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white text-stone-800 rounded-2xl border border-[#E3E0D6] focus:outline-none focus:ring-2 focus:ring-[#10B981] text-xs sm:text-sm placeholder:text-stone-400 shadow-2xs"
+            />
+          </div>
 
-          <button
-            onClick={() => setActiveTab('studio')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeTab === 'studio'
-                ? 'bg-[#063D29] text-white shadow-sm'
-                : 'text-[#72776F] hover:text-[#20251F] hover:bg-stone-50'
-            }`}
-          >
-            <Palette className="w-4 h-4 text-[#E8C928]" />
-            <span>Theme & Branding Studio</span>
-            {selectedCanteen && (
-              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full uppercase">
-                {selectedCanteen.name.split(' ')[0]}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-stone-500 bg-white px-3 py-2 rounded-xl border border-[#E3E0D6] shadow-2xs">
+              {filteredCanteens.length} of {canteens.length} Outlets
+            </span>
+            <button
+              onClick={() => setActiveTab('onboard')}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#063D29] to-[#075C35] hover:from-[#04281B] hover:to-[#063D29] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4 text-[#E8C928]" />
+              <span>Onboard New Establishment</span>
+            </button>
+          </div>
         </div>
-
-        <button
-          onClick={() => setIsOnboardModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#063D29] to-[#075C35] hover:from-[#04281B] hover:to-[#063D29] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
-        >
-          <Plus className="w-4 h-4 text-[#E8C928]" />
-          <span>Onboard New Canteen</span>
-        </button>
-      </div>
+      )}
 
       {isLoading ? (
         <div className="min-h-[300px] flex flex-col items-center justify-center gap-3 bg-white rounded-3xl border border-[#E3E0D6]">
@@ -620,7 +640,7 @@ export const SuperAdminPage: React.FC = () => {
 
           {/* Canteen Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {canteens.map((canteen) => {
+            {filteredCanteens.map((canteen) => {
               const isSelected = selectedCanteen?.id === canteen.id;
               return (
                 <div
@@ -799,11 +819,588 @@ export const SuperAdminPage: React.FC = () => {
                 </div>
               );
             })}
+            {filteredCanteens.length === 0 && (
+              <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-[#E3E0D6] p-8">
+                <Building2 className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-stone-700">No establishments found</h3>
+                <p className="text-xs text-stone-500 max-w-sm mx-auto mt-1">
+                  {searchQuery ? `No establishments match your search "${searchQuery}".` : 'No outlets have been created yet.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveTab('onboard');
+                  }}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-[#063D29] hover:bg-[#04281B] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#E8C928]" />
+                  <span>Onboard New Establishment</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : activeTab === 'onboard' ? (
+        /* ========================================================================= */
+        /* TAB 2: DEDICATED FULL-PAGE ONBOARDING STUDIO                             */
+        /* ========================================================================= */
+        <div className="space-y-6">
+          {/* Header Bar */}
+          <div className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] border border-slate-700/60 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center text-white shadow-lg shadow-[#10B981]/25 ring-1 ring-white/20">
+                  <Building2 className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl sm:text-2xl font-bold font-serif text-white">
+                      Onboard New Establishment
+                    </h2>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/30">
+                      Multi-Tenant Engine
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+                    Configure restaurant & cafe branding, URL slug, dedicated manager credentials, and optionally duplicate the full starter menu catalog.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('network')}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700 transition-colors shrink-0"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Return to Directory</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Form & Live Preview Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left 7 Cols: The Form */}
+            <div className="lg:col-span-7 space-y-6">
+              <form onSubmit={handleCreateCanteen} className="space-y-6">
+                {/* 1. Basic Info */}
+                <div className="bg-white rounded-3xl border border-[#E3E0D6] p-5 sm:p-7 shadow-xs space-y-4">
+                  <div className="flex items-center gap-2.5 border-b border-stone-100 pb-3">
+                    <Building className="w-5 h-5 text-[#075C35]" />
+                    <h3 className="font-serif font-bold text-base text-[#20251F]">
+                      1. Establishment Identity & Location
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Outlet / Restaurant Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Chai & Bytes Cafe"
+                        value={newCanteenForm.name}
+                        onChange={(e) => {
+                          const name = e.target.value;
+                          const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+                          setNewCanteenForm({ ...newCanteenForm, name, slug });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#075C35] text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        URL Identifier Slug *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. chai-bytes-cafe"
+                        value={newCanteenForm.slug}
+                        onChange={(e) => setNewCanteenForm({ ...newCanteenForm, slug: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#075C35] text-sm font-mono"
+                      />
+                      <p className="text-[10px] text-stone-400 mt-1">Customer access link: /c/{newCanteenForm.slug || '...'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Tagline / Identity
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Gourmet Tea, Espresso & Quick Bites"
+                      value={newCanteenForm.tagline}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, tagline: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#075C35] text-sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Dietary Mode
+                      </label>
+                      <select
+                        value={newCanteenForm.dietary_type}
+                        onChange={(e) => setNewCanteenForm({ ...newCanteenForm, dietary_type: e.target.value as any })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm bg-white"
+                      >
+                        <option value="pure_veg">100% Pure Vegetarian</option>
+                        <option value="veg_nonveg">Veg & Non-Veg Multi-Cuisine</option>
+                        <option value="jain_available">Pure Veg + Jain Food</option>
+                        <option value="custom">Custom Badge</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Dietary Badge Label
+                      </label>
+                      <input
+                        type="text"
+                        value={newCanteenForm.pure_veg_label}
+                        onChange={(e) => setNewCanteenForm({ ...newCanteenForm, pure_veg_label: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Physical Address / Mall Location
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Tower B Food Court, Cyber Hub, Gurugram"
+                      value={newCanteenForm.address}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, address: e.target.value, location_landmark: e.target.value.split(',')[0] })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Visual Theme & Branding */}
+                <div className="bg-white rounded-3xl border border-[#E3E0D6] p-5 sm:p-7 shadow-xs space-y-4">
+                  <div className="flex items-center gap-2.5 border-b border-stone-100 pb-3">
+                    <Palette className="w-5 h-5 text-[#075C35]" />
+                    <h3 className="font-serif font-bold text-base text-[#20251F]">
+                      2. Visual Theme & Color Palette
+                    </h3>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-2">
+                      Select Theme Preset
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {THEME_PRESETS.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleApplyPresetToNew(p)}
+                          className={`p-3 rounded-2xl border text-left transition-all ${
+                            newCanteenForm.theme_preset === p.id
+                              ? 'border-[#075C35] bg-emerald-50/50 ring-2 ring-[#075C35]'
+                              : 'border-stone-200 bg-white hover:border-stone-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <div className="w-3.5 h-3.5 rounded-full shadow-xs" style={{ backgroundColor: p.primary }} />
+                            <div className="w-3.5 h-3.5 rounded-full shadow-xs" style={{ backgroundColor: p.secondary }} />
+                            <div className="w-3.5 h-3.5 rounded-full shadow-xs" style={{ backgroundColor: p.accent }} />
+                          </div>
+                          <p className="text-xs font-bold text-stone-800 truncate">{p.name}</p>
+                          <p className="text-[10px] text-stone-500 line-clamp-1 mt-0.5">{p.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Logo Upload Box */}
+                  <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full overflow-hidden bg-white p-1 border-2 border-stone-200 shrink-0 flex items-center justify-center">
+                      {newLogoPreview ? (
+                        <img src={newLogoPreview} alt="Logo" className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        <ImageIcon className="w-6 h-6 text-stone-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-stone-700">Circular Outlet Logo</p>
+                      <p className="text-[11px] text-stone-500">PNG, JPG or WebP (transparent or solid)</p>
+                    </div>
+                    <input
+                      type="file"
+                      ref={newFileInputRef}
+                      accept="image/*"
+                      onChange={handleNewLogoChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => newFileInputRef.current?.click()}
+                      className="px-3.5 py-2 bg-white text-xs font-bold text-[#075C35] border border-stone-300 rounded-xl hover:bg-stone-100 shadow-2xs"
+                    >
+                      Browse File
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Manager Credentials */}
+                <div className="bg-[#0F172A] text-white p-5 sm:p-7 rounded-3xl border border-slate-700/80 shadow-lg space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+                    <div className="flex items-center gap-2">
+                      <UserIcon className="w-5 h-5 text-[#10B981]" />
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#34D399]">
+                        3. Dedicated Manager Login Credentials
+                      </h3>
+                    </div>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-semibold">
+                      Single Outlet Access
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-300">
+                    This manager will log in at <code className="text-[#34D399] bg-slate-800 px-1.5 py-0.5 rounded">/admin/login</code> to manage only this venue's items, pricing, and live orders.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        Manager Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Rahul Sharma"
+                        value={newCanteenForm.manager_name}
+                        onChange={(e) => setNewCanteenForm({ ...newCanteenForm, manager_name: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#10B981] text-xs text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        Manager Login Email *
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="e.g. manager@chaibytes.com"
+                        value={newCanteenForm.manager_email}
+                        onChange={(e) => setNewCanteenForm({ ...newCanteenForm, manager_email: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#10B981] text-xs text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-slate-300">
+                        Initial Login Password *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {newCanteenForm.manager_password && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(newCanteenForm.manager_password);
+                              setCopiedPass(true);
+                              setTimeout(() => setCopiedPass(false), 2000);
+                              addToast('info', 'Password copied to clipboard!');
+                            }}
+                            className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1"
+                          >
+                            {copiedPass ? <CheckCheck className="w-3 h-3 text-[#34D399]" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedPass ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const randomPass = 'Cafe@' + Math.floor(1000 + Math.random() * 9000);
+                            setNewCanteenForm({ ...newCanteenForm, manager_password: randomPass });
+                          }}
+                          className="text-[11px] text-[#34D399] hover:underline font-bold"
+                        >
+                          Generate Password
+                        </button>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. Cafe@2026"
+                      value={newCanteenForm.manager_password}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, manager_password: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#10B981] text-xs text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Starter Menu Catalog */}
+                <div className="p-4 bg-emerald-50 rounded-3xl border border-emerald-200 flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="clone_default_page"
+                    checked={newCanteenForm.clone_from_default}
+                    onChange={(e) => setNewCanteenForm({ ...newCanteenForm, clone_from_default: e.target.checked })}
+                    className="mt-1 w-4 h-4 text-[#075C35] rounded focus:ring-[#075C35]"
+                  />
+                  <div>
+                    <label htmlFor="clone_default_page" className="text-xs font-bold text-emerald-950 cursor-pointer">
+                      Clone Starter Menu Catalog from Default Canteen (Annapoorna)
+                    </label>
+                    <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                      Automatically copies all 5 categories and 29 dishes so the new establishment starts with a complete catalog ready for customization.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Submit Actions */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('network')}
+                    className="px-5 py-2.5 rounded-xl text-stone-600 hover:bg-stone-100 text-xs sm:text-sm font-bold transition-colors"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#063D29] hover:bg-[#04281B] text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-[#063D29]/20 transition-all disabled:opacity-60 transform active:scale-95"
+                  >
+                    {isSaving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Provisioning Establishment...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-[#E8C928]" />
+                        <span>Complete Onboarding & Provision Outlet</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Right 5 Cols: Live Real-Time Preview Card */}
+            <div className="lg:col-span-5 sticky top-24 space-y-6">
+              {/* Preview Card */}
+              <div className="bg-white rounded-3xl border border-[#E3E0D6] overflow-hidden shadow-lg">
+                <div className="p-4 bg-stone-100 border-b border-stone-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-[#075C35]" />
+                    <span className="text-xs font-bold text-stone-700">Live Appearance Preview</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold text-stone-500 bg-white px-2 py-0.5 rounded-full border border-stone-200">
+                    Auto Updates
+                  </span>
+                </div>
+
+                {/* Simulated Customer Header */}
+                <div
+                  className="p-5 text-white transition-colors duration-300"
+                  style={{ backgroundColor: newCanteenForm.primary_color }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 border-2 border-[#E8C928] shrink-0 flex items-center justify-center">
+                      {newLogoPreview ? (
+                        <img src={newLogoPreview} alt="Logo" className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        <UtensilsCrossed className="w-6 h-6 text-stone-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-serif font-bold text-base truncate">
+                        {newCanteenForm.name || 'New Outlet Name'}
+                      </h4>
+                      <p className="text-[11px] opacity-90 truncate">
+                        {newCanteenForm.tagline || 'Gourmet Cuisine & Quick Bites'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                      {newCanteenForm.pure_veg_label || '100% Pure Vegetarian'}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: newCanteenForm.accent_color, color: '#000' }}
+                    >
+                      Open Now
+                    </span>
+                  </div>
+                </div>
+
+                {/* Simulated Menu Strip */}
+                <div className="p-4 space-y-3 bg-stone-50/50">
+                  <div className="flex items-center justify-between text-xs text-stone-500 border-b border-stone-200 pb-2">
+                    <span className="font-mono text-[11px]">/c/{newCanteenForm.slug || 'url-slug'}</span>
+                    <span className="text-[10px] text-emerald-700 font-bold">QR Ready</span>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-2xl border border-stone-200 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center shrink-0">
+                      <UtensilsCrossed className="w-5 h-5 text-stone-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-stone-800 truncate">Special South Indian Thali</p>
+                      <p className="text-[10px] text-stone-500">Includes 2 curries, rice, sambar, papad</p>
+                    </div>
+                    <span
+                      className="text-xs font-black px-2 py-1 rounded-lg text-white shrink-0"
+                      style={{ backgroundColor: newCanteenForm.primary_color }}
+                    >
+                      ₹120
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manager Credentials Quick Info */}
+              <div className="bg-[#0F172A] rounded-3xl p-5 border border-slate-700 text-white space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#34D399]">
+                  <Key className="w-4 h-4 text-[#10B981]" />
+                  <span>Provisioned Manager Account</span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Portal:</span>
+                    <span className="font-mono text-[11px] text-white">/admin/login</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Email:</span>
+                    <span className="font-semibold text-white truncate max-w-[180px]">
+                      {newCanteenForm.manager_email || 'Not configured'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Password:</span>
+                    <span className="font-mono text-[11px] text-[#34D399]">
+                      {newCanteenForm.manager_password || 'Not generated'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'managers' ? (
+        /* ========================================================================= */
+        /* TAB 3: OUTLET MANAGERS & CREDENTIALS DIRECTORY                            */
+        /* ========================================================================= */
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] border border-slate-700/60 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center text-white shadow-lg shadow-[#10B981]/25 ring-1 ring-white/20">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold font-serif text-white">
+                  Establishment Managers & Credentials
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+                  Manage login accounts, reset passwords, and inspect which manager administers each dining outlet.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('onboard')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-black bg-[#10B981] hover:bg-[#059669] shadow-lg shadow-[#10B981]/25 transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Onboard New Establishment</span>
+            </button>
+          </div>
+
+          {/* Managers List Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {canteens.map((canteen) => {
+              const manager = canteen.managers && canteen.managers.length > 0 ? canteen.managers[0] : null;
+              return (
+                <div
+                  key={canteen.id}
+                  className="bg-white rounded-3xl border border-[#E3E0D6] p-5 shadow-xs flex flex-col justify-between space-y-4"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center overflow-hidden border border-stone-200 shrink-0">
+                          {canteen.full_logo_url || canteen.logo_url ? (
+                            <img src={canteen.full_logo_url || canteen.logo_url!} alt={canteen.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <UtensilsCrossed className="w-5 h-5 text-stone-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-serif font-bold text-sm text-stone-800 truncate">{canteen.name}</h4>
+                          <p className="text-[11px] text-stone-500 font-mono">/c/{canteen.slug}</p>
+                        </div>
+                      </div>
+                      {canteen.is_default && (
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                          Default
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-stone-500">Manager:</span>
+                        <span className="font-bold text-stone-800 truncate max-w-[150px]">
+                          {manager?.name || 'No manager assigned'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-stone-500">Email:</span>
+                        <span className="font-mono text-[11px] text-stone-700 truncate max-w-[150px]">
+                          {manager?.email || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-stone-500">Role:</span>
+                        <span className="text-[10px] uppercase font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          Outlet Manager
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleOpenManagerModal(canteen)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#075C35] hover:bg-emerald-50 border border-emerald-200 transition-colors"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      <span>{manager ? 'Reset Password' : 'Add Manager'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleSelectCanteenForStudio(canteen)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100 transition-colors"
+                    >
+                      <Palette className="w-3.5 h-3.5" />
+                      <span>Studio</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
         /* ========================================================================= */
-        /* TAB 2: LIVE THEME & BRANDING STUDIO                                      */
+        /* TAB 4: LIVE THEME & BRANDING STUDIO                                      */
         /* ========================================================================= */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Form: Customizer Controls (7 Cols) */}
@@ -1634,23 +2231,23 @@ export const SuperAdminPage: React.FC = () => {
 
       {/* ========================================================================= */}
       {isOnboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-stone-200 my-8">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-4 mb-5">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md overflow-y-auto p-4 sm:p-6 lg:p-8 flex items-start justify-center">
+          <div className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 my-8 sm:my-12 relative animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white z-10 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-6 sm:p-8 pb-4 mb-5 border-b border-stone-100 rounded-t-3xl flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#063D29] text-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#063D29] text-white flex items-center justify-center shadow-xs">
                   <Building2 className="w-5 h-5 text-[#E8C928]" />
                 </div>
                 <div>
                   <h3 className="font-serif font-bold text-lg text-[#20251F]">
-                    Onboard New Canteen
+                    Onboard New Establishment
                   </h3>
-                  <p className="text-xs text-stone-500">Setup another food counter, cafe, or dining outlet</p>
+                  <p className="text-xs text-stone-500">Quick setup for new cafe, restaurant or food counter</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsOnboardModalOpen(false)}
-                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100"
+                className="p-2 text-stone-400 hover:text-stone-700 rounded-xl hover:bg-stone-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1922,7 +2519,7 @@ export const SuperAdminPage: React.FC = () => {
       {/* MODAL: CLONE MENU TEMPLATE                                                */}
       {/* ========================================================================= */}
       {isCloneModalOpen && cloneTargetCanteen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
               <div className="flex items-center gap-2">
@@ -1984,7 +2581,7 @@ export const SuperAdminPage: React.FC = () => {
       {/* MODAL: MANAGE MANAGER CREDENTIALS                                         */}
       {/* ========================================================================= */}
       {isManagerModalOpen && managerTargetCanteen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
               <div className="flex items-center gap-2">
