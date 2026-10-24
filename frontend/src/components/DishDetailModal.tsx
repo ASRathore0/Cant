@@ -12,12 +12,18 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
   if (!item) return null;
 
   const whatsapp = settings?.whatsapp || '+91 98765 43210';
+  const primaryColor = settings?.primary_color || '#062D1F';
+  const secondaryColor = settings?.secondary_color || '#075C35';
+  const accentColor = settings?.accent_color || '#E8C928';
+  const bgColor = settings?.bg_color || '#FAF8F1';
+  const restaurantName = settings?.restaurant_name || 'Front Counter';
+
   const cleanWhatsapp = whatsapp.replace(/[^0-9]/g, '');
   const isAvailable = item.is_available;
 
   const handleInquire = () => {
     const text = encodeURIComponent(
-      `Hello Annapoorna Canteen, I am at the counter. Is "${item.name}" available right now?`
+      `Hello ${restaurantName}, I am at the counter. Is "${item.name}" available right now?`
     );
     window.open(`https://wa.me/${cleanWhatsapp}?text=${text}`, '_blank');
   };
@@ -45,7 +51,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
               className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[#FAF8F1] text-[#063D29] font-serif font-bold text-2xl">
+            <div
+              className="w-full h-full flex items-center justify-center font-serif font-bold text-2xl"
+              style={{ backgroundColor: bgColor, color: primaryColor }}
+            >
               {item.name}
             </div>
           )}
@@ -57,7 +66,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
                 <div className="w-2 h-2 rounded-full bg-[#15803d]" />
               </div>
             </div>
-            <span className="bg-[#063D29] text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+            <span
+              className="text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm"
+              style={{ backgroundColor: primaryColor }}
+            >
               100% Pure Veg
             </span>
           </div>
@@ -83,19 +95,22 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
                   {item.name}
                 </h3>
                 {item.is_featured && isAvailable && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8C928] text-[#063D29]">
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                    style={{ backgroundColor: accentColor, color: primaryColor }}
+                  >
                     <Sparkles className="w-3 h-3" />
                     Bestseller
                   </span>
                 )}
               </div>
               <p className="text-xs text-[#72776F] font-semibold mt-1">
-                {item.category_name || 'Annapoorna Special'}
+                {item.category_name || `${restaurantName} Special`}
               </p>
             </div>
 
             <div className="text-right">
-              <div className="font-serif font-extrabold text-2xl text-[#075C35]">
+              <div className="font-serif font-extrabold text-2xl" style={{ color: secondaryColor }}>
                 {item.formatted_price}
               </div>
               {item.price_type === 'mrp' && (
@@ -106,7 +121,14 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
 
           {/* Serving Portion Badge */}
           {item.serving_info && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#FAF8F1] border border-[#E3E0D6] text-xs font-medium text-[#063D29]">
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-medium"
+              style={{
+                backgroundColor: bgColor,
+                color: primaryColor,
+                borderColor: `${primaryColor}20`,
+              }}
+            >
               <span>Portion:</span>
               <strong className="font-bold">{item.serving_info}</strong>
             </div>
@@ -114,8 +136,15 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
 
           {/* Pricing Note */}
           {item.pricing_note && (
-            <div className="p-3 bg-[#FAF8F1] rounded-xl border border-[#E3E0D6] flex items-start gap-2 text-xs text-[#063D29]">
-              <Info className="w-4 h-4 text-[#E8C928] shrink-0 mt-0.5" />
+            <div
+              className="p-3 rounded-xl border flex items-start gap-2 text-xs"
+              style={{
+                backgroundColor: bgColor,
+                color: primaryColor,
+                borderColor: `${primaryColor}20`,
+              }}
+            >
+              <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accentColor }} />
               <span>{item.pricing_note}</span>
             </div>
           )}
@@ -136,9 +165,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
           <div className="pt-4 border-t border-stone-100 flex items-center gap-3">
             <button
               onClick={handleInquire}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#075C35] hover:bg-[#063D29] text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] hover:brightness-110"
+              style={{ backgroundColor: secondaryColor }}
             >
-              <MessageCircle className="w-4 h-4 text-[#E8C928]" />
+              <MessageCircle className="w-4 h-4" style={{ color: accentColor }} />
               <span>Inquire at Counter on WhatsApp</span>
             </button>
           </div>

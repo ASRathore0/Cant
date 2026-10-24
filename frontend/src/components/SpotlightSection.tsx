@@ -5,9 +5,20 @@ import { MenuItem } from '../types';
 interface SpotlightSectionProps {
   items: MenuItem[];
   onSelect: (item: MenuItem) => void;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  bgColor?: string;
 }
 
-export const SpotlightSection: React.FC<SpotlightSectionProps> = ({ items, onSelect }) => {
+export const SpotlightSection: React.FC<SpotlightSectionProps> = ({
+  items,
+  onSelect,
+  primaryColor = '#062D1F',
+  secondaryColor = '#075C35',
+  accentColor = '#E8C928',
+  bgColor = '#FAF8F1',
+}) => {
   const featuredItems = items.filter((item) => item.is_featured);
 
   if (featuredItems.length === 0) return null;
@@ -17,11 +28,18 @@ export const SpotlightSection: React.FC<SpotlightSectionProps> = ({ items, onSel
       {/* Header */}
       <div className="flex items-center justify-between mb-2 px-0.5">
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-[#E8C928]" />
-          <h3 className="font-serif font-black text-xs sm:text-sm text-[#062D1F] tracking-tight">
+          <Sparkles className="w-3.5 h-3.5" style={{ color: accentColor }} />
+          <h3 className="font-serif font-black text-xs sm:text-sm tracking-tight" style={{ color: primaryColor }}>
             Customer Favourites
           </h3>
-          <span className="text-[9px] font-bold text-[#075C35] bg-[#E8C928]/30 px-1.5 py-0.2 rounded-full border border-[#E8C928]/40">
+          <span
+            className="text-[9px] font-bold px-1.5 py-0.2 rounded-full border"
+            style={{
+              color: secondaryColor,
+              backgroundColor: `${accentColor}25`,
+              borderColor: `${accentColor}50`,
+            }}
+          >
             Top Picks
           </span>
         </div>
@@ -51,7 +69,10 @@ export const SpotlightSection: React.FC<SpotlightSectionProps> = ({ items, onSel
                     }`}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#FAF8F1] text-[#062D1F] font-serif font-bold text-sm">
+                  <div
+                    className="w-full h-full flex items-center justify-center font-serif font-bold text-sm"
+                    style={{ backgroundColor: bgColor, color: primaryColor }}
+                  >
                     {item.name[0]}
                   </div>
                 )}
@@ -76,7 +97,7 @@ export const SpotlightSection: React.FC<SpotlightSectionProps> = ({ items, onSel
               {/* Card Body */}
               <div className="p-2.5 flex-1 flex flex-col justify-between">
                 <div>
-                  <h4 className="font-serif font-bold text-xs text-[#1A1D1A] group-hover:text-[#075C35] transition-colors line-clamp-1 leading-snug">
+                  <h4 className="font-serif font-bold text-xs text-[#1A1D1A] group-hover:text-stone-900 transition-colors line-clamp-1 leading-snug">
                     {item.name}
                   </h4>
                   {item.serving_info && (
@@ -88,11 +109,17 @@ export const SpotlightSection: React.FC<SpotlightSectionProps> = ({ items, onSel
 
                 {/* Price & Action Row */}
                 <div className="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between">
-                  <span className="font-serif font-black text-xs text-[#075C35]">
+                  <span className="font-serif font-black text-xs" style={{ color: secondaryColor }}>
                     {item.formatted_price}
                   </span>
 
-                  <span className="px-1.5 py-0.5 rounded bg-[#FAF8F1] hover:bg-[#062D1F] text-[#062D1F] hover:text-white border border-stone-200 text-[9px] font-bold transition-all">
+                  <span
+                    className="px-1.5 py-0.5 rounded border border-stone-200 text-[9px] font-bold transition-all group-hover:text-white"
+                    style={{
+                      backgroundColor: bgColor,
+                      color: primaryColor,
+                    }}
+                  >
                     View
                   </span>
                 </div>

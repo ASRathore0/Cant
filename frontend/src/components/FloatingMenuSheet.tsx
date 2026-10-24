@@ -9,6 +9,10 @@ interface FloatingMenuSheetProps {
   activeCategoryId: number | 'all';
   onSelectCategory: (id: number | 'all') => void;
   totalItemCount: number;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  bgColor?: string;
 }
 
 export const FloatingMenuSheet: React.FC<FloatingMenuSheetProps> = ({
@@ -18,6 +22,10 @@ export const FloatingMenuSheet: React.FC<FloatingMenuSheetProps> = ({
   activeCategoryId,
   onSelectCategory,
   totalItemCount,
+  primaryColor = '#062D1F',
+  secondaryColor = '#075C35',
+  accentColor = '#E8C928',
+  bgColor = '#FAF8F1',
 }) => {
   if (!isOpen) return null;
 
@@ -42,10 +50,10 @@ export const FloatingMenuSheet: React.FC<FloatingMenuSheetProps> = ({
       <div className="relative z-10 bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-stone-200 animate-in slide-in-from-bottom duration-300">
         <div className="flex items-center justify-between pb-3 border-b border-stone-100 mb-3">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-[#FAF8F1] text-[#075C35]">
+            <div className="p-1.5 rounded-lg" style={{ backgroundColor: bgColor, color: secondaryColor }}>
               <Utensils className="w-4 h-4" />
             </div>
-            <h4 className="font-serif font-bold text-base text-[#063D29]">Browse Menu Sections</h4>
+            <h4 className="font-serif font-bold text-base" style={{ color: primaryColor }}>Browse Menu Sections</h4>
           </div>
           <button onClick={onClose} className="p-1 text-stone-400 hover:text-stone-600 rounded-lg">
             <X className="w-4 h-4" />
@@ -58,15 +66,23 @@ export const FloatingMenuSheet: React.FC<FloatingMenuSheetProps> = ({
             onClick={() => handleSelect('all')}
             className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-bold transition-all ${
               activeCategoryId === 'all'
-                ? 'bg-[#063D29] text-white shadow-sm'
-                : 'bg-[#FAF8F1] hover:bg-[#F3EFE3] text-[#20251F]'
+                ? 'text-white shadow-sm'
+                : 'hover:bg-stone-100 text-[#20251F]'
             }`}
+            style={
+              activeCategoryId === 'all'
+                ? { backgroundColor: primaryColor }
+                : { backgroundColor: bgColor }
+            }
           >
             <span>All Dishes</span>
             <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                activeCategoryId === 'all' ? 'bg-[#E8C928] text-[#063D29]' : 'bg-stone-200 text-[#72776F]'
-              }`}
+              className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+              style={
+                activeCategoryId === 'all'
+                  ? { backgroundColor: accentColor, color: primaryColor }
+                  : { backgroundColor: '#E5E7EB', color: '#4B5563' }
+              }
             >
               {totalItemCount}
             </span>
@@ -83,15 +99,23 @@ export const FloatingMenuSheet: React.FC<FloatingMenuSheetProps> = ({
                 onClick={() => handleSelect(cat.id)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-[#063D29] text-white shadow-sm'
-                    : 'bg-[#FAF8F1] hover:bg-[#F3EFE3] text-[#20251F]'
+                    ? 'text-white shadow-sm'
+                    : 'hover:bg-stone-100 text-[#20251F]'
                 }`}
+                style={
+                  isActive
+                    ? { backgroundColor: primaryColor }
+                    : { backgroundColor: bgColor }
+                }
               >
                 <span>{cat.name}</span>
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    isActive ? 'bg-[#E8C928] text-[#063D29]' : 'bg-stone-200 text-[#72776F]'
-                  }`}
+                  className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                  style={
+                    isActive
+                      ? { backgroundColor: accentColor, color: primaryColor }
+                      : { backgroundColor: '#E5E7EB', color: '#4B5563' }
+                  }
                 >
                   {count}
                 </span>

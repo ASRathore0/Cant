@@ -10,14 +10,13 @@ import { DishDetailModal } from '../components/DishDetailModal';
 import { FloatingMenuSheet } from '../components/FloatingMenuSheet';
 import { Footer } from '../components/Footer';
 import { publicApi } from '../services/api';
-import { Category, MenuItem, RestaurantSettings, Canteen } from '../types';
+import { Category, MenuItem, RestaurantSettings } from '../types';
 
 export const PublicMenuPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
   const [searchParams] = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
-  const [canteensList, setCanteensList] = useState<Canteen[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<number | 'all'>('all');
   const [isAllMenuExpanded, setIsAllMenuExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,14 +44,6 @@ export const PublicMenuPage: React.FC = () => {
       const data = await publicApi.getMenu(isFromQr, canteenParam || undefined);
       setCategories(data.categories || []);
       setSettings(data.settings || null);
-
-      // Also fetch active canteens for switcher
-      try {
-        const cList = await publicApi.getCanteens();
-        setCanteensList(cList || []);
-      } catch (cErr) {
-        // non-blocking
-      }
     } catch (err: any) {
       console.error('Failed to load menu:', err);
       setError('Unable to load menu right now. Please check your internet connection.');
@@ -159,19 +150,23 @@ export const PublicMenuPage: React.FC = () => {
   const cleanPhone = phone.replace(/[^0-9]/g, '');
   const cleanWhatsapp = whatsapp.replace(/[^0-9]/g, '');
 
+  const primaryColor = settings?.primary_color || '#062D1F';
+  const secondaryColor = settings?.secondary_color || '#07402A';
+  const accentColor = settings?.accent_color || '#E8C928';
+  const bgColor = settings?.bg_color || '#FAF8F1';
+
   return (
     <div
       className="min-h-screen flex flex-col transition-colors duration-300"
-      style={{ backgroundColor: settings?.bg_color || '#F8F6F0' }}
+      style={{ backgroundColor: bgColor }}
     >
-      {/* Brand App Bar with Branch/Canteen Switcher */}
+      {/* Brand App Bar */}
       <Navbar
         settings={settings}
-        canteens={canteensList}
         activeCanteenSlug={canteenParam || settings?.slug}
       />
 
-      {/* Animated Craving Slider (Replaces Old Bulky Hero Box) */}
+      {/* Animated Craving Slider (Delicacy Trio Hero Box) */}
       <Hero
         settings={settings}
         onSelectCraving={(term) => {
@@ -191,7 +186,7 @@ export const PublicMenuPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search samosa, chai, coffee, burger, thali..."
-            className="w-full pl-11 pr-10 py-2.5 sm:py-3 bg-white border border-stone-200/90 rounded-2xl text-xs sm:text-sm text-[#1A1D1A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#062D1F] focus:border-transparent transition-all shadow-app-card"
+            className="w-full pl-11 pr-10 py-2.5 sm:py-3 bg-white border border-stone-200/90 rounded-2xl text-xs sm:text-sm text-[#1A1D1A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all shadow-app-card"
           />
           {searchQuery && (
             <button
@@ -203,15 +198,20 @@ export const PublicMenuPage: React.FC = () => {
           )}
         </div>
 
-        {/* Quick Filter Pills (3 Rounded Pills matching sketch: [ All ] [ Bestsellers ] [ Under ₹50 ]) */}
+        {/* Quick Filter Pills (3 Rounded Pills: [ All ] [ Bestsellers ] [ Under ₹50 ]) */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2.5 pb-1">
           <button
             onClick={() => setQuickFilter('all')}
             className={`flex-1 min-w-[95px] sm:min-w-0 py-1.5 sm:py-2 px-3 rounded-xl sm:rounded-2xl text-xs font-bold text-center transition-all ${
               quickFilter === 'all'
-                ? 'bg-[#062D1F] text-white shadow-md'
+                ? 'shadow-md'
                 : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50'
             }`}
+            style={
+              quickFilter === 'all'
+                ? { backgroundColor: primaryColor, color: '#FFFFFF' }
+                : {}
+            }
           >
             All Items
           </button>
@@ -220,11 +220,16 @@ export const PublicMenuPage: React.FC = () => {
             onClick={() => setQuickFilter('bestsellers')}
             className={`flex-1 min-w-[110px] sm:min-w-0 py-1.5 sm:py-2 px-3 rounded-xl sm:rounded-2xl text-xs font-bold text-center inline-flex items-center justify-center gap-1 transition-all ${
               quickFilter === 'bestsellers'
-                ? 'bg-[#E8C928] text-[#062D1F] shadow-md font-black'
+                ? 'shadow-md font-black'
                 : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50'
             }`}
+            style={
+              quickFilter === 'bestsellers'
+                ? { backgroundColor: accentColor, color: primaryColor }
+                : {}
+            }
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: quickFilter === 'bestsellers' ? primaryColor : '#D97706' }} />
             <span>Bestsellers</span>
           </button>
 
@@ -232,9 +237,14 @@ export const PublicMenuPage: React.FC = () => {
             onClick={() => setQuickFilter('budget')}
             className={`flex-1 min-w-[105px] sm:min-w-0 py-1.5 sm:py-2 px-3 rounded-xl sm:rounded-2xl text-xs font-bold text-center transition-all ${
               quickFilter === 'budget'
-                ? 'bg-[#075C35] text-white shadow-md'
+                ? 'shadow-md'
                 : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50'
             }`}
+            style={
+              quickFilter === 'budget'
+                ? { backgroundColor: secondaryColor, color: '#FFFFFF' }
+                : {}
+            }
           >
             Under ₹50 🏷️
           </button>
@@ -245,6 +255,10 @@ export const PublicMenuPage: React.FC = () => {
           <SpotlightSection
             items={allItems}
             onSelect={(item) => setSelectedDish(item)}
+            primaryColor={primaryColor}
+            secondaryColor={secondaryColor}
+            accentColor={accentColor}
+            bgColor={bgColor}
           />
         )}
       </div>
@@ -255,6 +269,10 @@ export const PublicMenuPage: React.FC = () => {
         activeCategoryId={activeCategoryId}
         onSelectCategory={handleSelectCategory}
         totalItemCount={allItems.length}
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+        accentColor={accentColor}
+        bgColor={bgColor}
       />
 
       {/* Main Content Area */}
@@ -293,10 +311,13 @@ export const PublicMenuPage: React.FC = () => {
         {/* Empty Search Results */}
         {!isLoading && !error && displayedCategories.length === 0 && (
           <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center max-w-sm mx-auto my-6 shadow-2xs">
-            <div className="w-12 h-12 bg-[#FAF8F1] rounded-full flex items-center justify-center mx-auto mb-3 border border-stone-200">
-              <Utensils className="w-5 h-5 text-[#72776F]" />
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 border border-stone-200"
+              style={{ backgroundColor: bgColor, color: primaryColor }}
+            >
+              <Utensils className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-[#062D1F] font-serif">No Dishes Found</h3>
+            <h3 className="text-base font-bold font-serif" style={{ color: primaryColor }}>No Dishes Found</h3>
             <p className="mt-1 text-xs text-[#72776F]">
               {searchQuery
                 ? `No items found matching "${searchQuery}".`
@@ -308,7 +329,8 @@ export const PublicMenuPage: React.FC = () => {
                 setQuickFilter('all');
                 handleSelectCategory('all');
               }}
-              className="mt-3 px-4 py-1.5 bg-[#062D1F] text-white rounded-full text-xs font-semibold"
+              className="mt-3 px-4 py-1.5 text-white rounded-full text-xs font-semibold shadow-xs"
+              style={{ backgroundColor: primaryColor }}
             >
               Reset Filters
             </button>
@@ -321,9 +343,16 @@ export const PublicMenuPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-stone-200">
               <div>
-                <h3 className="text-base sm:text-lg lg:text-xl font-black font-serif text-[#062D1F] tracking-tight flex items-center gap-2">
+                <h3 className="text-base sm:text-lg lg:text-xl font-black font-serif tracking-tight flex items-center gap-2" style={{ color: primaryColor }}>
                   <span>Chef's Selected Mix</span>
-                  <span className="text-[11px] sm:text-xs font-sans font-bold text-[#075C35] bg-[#E8C928]/30 px-2 py-0.5 rounded-full border border-[#E8C928]/40">
+                  <span
+                    className="text-[11px] sm:text-xs font-sans font-bold px-2 py-0.5 rounded-full border"
+                    style={{
+                      color: secondaryColor,
+                      backgroundColor: `${accentColor}25`,
+                      borderColor: `${accentColor}50`,
+                    }}
+                  >
                     {mixedAllItems.length} of {allItems.length} Dishes
                   </span>
                 </h3>
@@ -340,18 +369,28 @@ export const PublicMenuPage: React.FC = () => {
                   key={item.id}
                   item={item}
                   onSelect={(dish) => setSelectedDish(dish)}
+                  primaryColor={primaryColor}
+                  secondaryColor={secondaryColor}
+                  accentColor={accentColor}
+                  bgColor={bgColor}
                 />
               ))}
             </div>
 
             {/* Explore More Card */}
             <div className="pt-2 pb-6 lg:pt-4">
-              <div className="bg-gradient-to-br from-white via-white to-[#FAF8F1] border border-stone-200 rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8 text-center shadow-app-card space-y-3.5">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#062D1F] text-[#E8C928] shadow-xs">
+              <div
+                className="border border-stone-200 rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8 text-center shadow-app-card space-y-3.5"
+                style={{ backgroundColor: '#FFFFFF' }}
+              >
+                <div
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-full shadow-xs"
+                  style={{ backgroundColor: primaryColor, color: accentColor }}
+                >
                   <Utensils className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-serif font-black text-sm sm:text-base lg:text-lg text-[#062D1F]">
+                  <h4 className="font-serif font-black text-sm sm:text-base lg:text-lg" style={{ color: primaryColor }}>
                     Craving More? Explore Full Menu
                   </h4>
                   <p className="text-xs sm:text-sm text-[#72776F] mt-1 max-w-lg mx-auto leading-relaxed">
@@ -365,15 +404,17 @@ export const PublicMenuPage: React.FC = () => {
                       setIsAllMenuExpanded(true);
                       window.scrollTo({ top: 400, behavior: 'smooth' });
                     }}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#062D1F] hover:bg-[#07402A] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all active:scale-95"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-2.5 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all active:scale-95 hover:brightness-110"
+                    style={{ backgroundColor: primaryColor }}
                   >
                     <span>Explore All {allItems.length} Dishes</span>
-                    <ChevronDown className="w-4 h-4 text-[#E8C928]" />
+                    <ChevronDown className="w-4 h-4" style={{ color: accentColor }} />
                   </button>
 
                   <button
                     onClick={() => setIsMenuSheetOpen(true)}
-                    className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-white hover:bg-stone-50 text-[#062D1F] border border-stone-200 text-xs sm:text-sm font-bold rounded-xl transition-all active:scale-95 shadow-2xs"
+                    className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-white hover:bg-stone-50 border border-stone-200 text-xs sm:text-sm font-bold rounded-xl transition-all active:scale-95 shadow-2xs"
+                    style={{ color: primaryColor }}
                   >
                     <span>Browse by Category ({categories.length})</span>
                   </button>
@@ -388,7 +429,8 @@ export const PublicMenuPage: React.FC = () => {
                     <button
                       key={c.id}
                       onClick={() => handleSelectCategory(c.id)}
-                      className="text-xs font-bold px-3 py-1.5 bg-stone-50 hover:bg-[#FAF8F1] text-[#062D1F] rounded-lg border border-stone-200 transition-all active:scale-95"
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-stone-200 transition-all active:scale-95 hover:border-stone-400"
+                      style={{ backgroundColor: bgColor, color: primaryColor }}
                     >
                       {c.name}
                     </button>
@@ -406,8 +448,8 @@ export const PublicMenuPage: React.FC = () => {
             {activeCategoryId === 'all' && isAllMenuExpanded && (
               <div className="flex items-center justify-between pb-2 mb-1 px-1 border-b border-stone-200">
                 <div className="flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 text-[#075C35]" />
-                  <span className="text-xs sm:text-sm font-bold text-[#062D1F]">
+                  <Compass className="w-4 h-4" style={{ color: secondaryColor }} />
+                  <span className="text-xs sm:text-sm font-bold" style={{ color: primaryColor }}>
                     All {allItems.length} Dishes Across {displayedCategories.length} Categories
                   </span>
                 </div>
@@ -416,7 +458,8 @@ export const PublicMenuPage: React.FC = () => {
                     setIsAllMenuExpanded(false);
                     window.scrollTo({ top: 380, behavior: 'smooth' });
                   }}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#075C35] hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
+                  style={{ color: secondaryColor }}
                 >
                   <span>Show 12 Curated Picks</span>
                   <ChevronUp className="w-3.5 h-3.5" />
@@ -433,7 +476,7 @@ export const PublicMenuPage: React.FC = () => {
                 {/* Section Header */}
                 <div className="flex items-center justify-between pb-2 mb-3 border-b border-stone-200">
                   <div>
-                    <h3 className="text-base sm:text-lg lg:text-xl font-black font-serif text-[#062D1F] tracking-tight flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg lg:text-xl font-black font-serif tracking-tight flex items-center gap-2" style={{ color: primaryColor }}>
                       <span>{cat.name}</span>
                       <span className="text-[11px] sm:text-xs font-sans font-bold text-[#72776F] bg-white px-2 py-0.5 rounded-full border border-stone-200">
                         {cat.filteredItems.length}
@@ -454,6 +497,10 @@ export const PublicMenuPage: React.FC = () => {
                       key={item.id}
                       item={item}
                       onSelect={(dish) => setSelectedDish(dish)}
+                      primaryColor={primaryColor}
+                      secondaryColor={secondaryColor}
+                      accentColor={accentColor}
+                      bgColor={bgColor}
                     />
                   ))}
                 </div>
@@ -466,13 +513,16 @@ export const PublicMenuPage: React.FC = () => {
       {/* Floating Bottom App Dock (Mobile only, hidden on desktop) */}
       {!isLoading && categories.length > 0 && (
         <div className="fixed bottom-4 inset-x-0 flex justify-center z-30 pointer-events-none px-4 lg:hidden">
-          <div className="pointer-events-auto bg-[#062D1F] text-white rounded-full shadow-dock border border-[#E8C928]/40 p-1.5 flex items-center gap-2">
+          <div
+            className="pointer-events-auto text-white rounded-full shadow-dock border p-1.5 flex items-center gap-2"
+            style={{ backgroundColor: primaryColor, borderColor: `${accentColor}50` }}
+          >
             {/* Browse Menu Button */}
             <button
               onClick={() => setIsMenuSheetOpen(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold transition-all active:scale-95 text-stone-100"
             >
-              <Utensils className="w-3.5 h-3.5 text-[#E8C928]" />
+              <Utensils className="w-3.5 h-3.5" style={{ color: accentColor }} />
               <span>Menu ({categories.length})</span>
               <ChevronDown className="w-3.5 h-3.5 text-stone-300" />
             </button>
@@ -481,7 +531,8 @@ export const PublicMenuPage: React.FC = () => {
             {phone && (
               <a
                 href={`tel:${cleanPhone}`}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-[#E8C928] active:scale-95 transition-all"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all"
+                style={{ color: accentColor }}
                 title="Call Counter"
               >
                 <Phone className="w-3.5 h-3.5" />
@@ -491,10 +542,11 @@ export const PublicMenuPage: React.FC = () => {
             {/* Quick WhatsApp */}
             {whatsapp && (
               <a
-                href={`https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent('Hello Annapoorna Canteen, I am at the counter and would like to inquire about today\'s menu.')}`}
+                href={`https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(`Hello ${settings?.restaurant_name || 'Counter'}, I am at the counter and would like to inquire about today's menu.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#15803d] hover:bg-[#166534] flex items-center justify-center text-white active:scale-95 transition-all"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white active:scale-95 transition-all hover:brightness-110"
+                style={{ backgroundColor: secondaryColor }}
                 title="WhatsApp Counter"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
@@ -519,6 +571,10 @@ export const PublicMenuPage: React.FC = () => {
         activeCategoryId={activeCategoryId}
         onSelectCategory={setActiveCategoryId}
         totalItemCount={allItems.length}
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+        accentColor={accentColor}
+        bgColor={bgColor}
       />
 
       {/* Footer */}

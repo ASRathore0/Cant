@@ -44,6 +44,10 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
   const heroHeading = settings?.hero_heading || 'Freshly Cooked & Brewed Daily';
   const heroBadge = settings?.hero_badge || "Today's Specials";
 
+  const primaryColor = settings?.primary_color || '#062D1F';
+  const secondaryColor = settings?.secondary_color || '#07402A';
+  const accentColor = settings?.accent_color || '#E8C928';
+
   const handleSelectItem = (item: HeroTrioItem) => {
     if (onSelectCraving && item.searchTerm) {
       onSelectCraving(item.searchTerm);
@@ -59,22 +63,28 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
         <div
           className="relative rounded-3xl lg:rounded-[36px] overflow-hidden border border-black/10 shadow-app-card transition-all duration-500 py-3.5 sm:py-5 lg:py-6 px-3 sm:px-6"
           style={{
-            background: 'radial-gradient(ellipse at 50% 40%, rgba(245, 158, 11, 0.16) 0%, rgba(6, 45, 31, 0.95) 70%, #041F15 100%)',
+            background: `radial-gradient(ellipse at 50% 40%, ${accentColor}28 0%, ${secondaryColor}f2 70%, ${primaryColor} 100%)`,
           }}
         >
           {/* Subtle Ambient Radial Lighting */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 rounded-full blur-3xl opacity-25 bg-amber-400 pointer-events-none" />
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 rounded-full blur-3xl opacity-25 pointer-events-none"
+            style={{ backgroundColor: accentColor }}
+          />
 
           {/* Minimalist Top Bar: Fresh Canteen Quality */}
           <div className="relative z-10 flex items-center justify-between px-2 mb-1.5 sm:mb-2 text-stone-300">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accentColor }} />
               <span className="text-[11px] sm:text-xs font-bold text-white tracking-wide uppercase font-serif">
                 {heroHeading}
               </span>
             </div>
             {heroBadge && (
-              <span className="text-[10px] sm:text-xs text-amber-300 font-bold bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
+              <span
+                className="text-[10px] sm:text-xs font-bold bg-white/10 px-2 py-0.5 rounded-full border border-white/10"
+                style={{ color: accentColor }}
+              >
                 {heroBadge}
               </span>
             )}
@@ -92,7 +102,7 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
               title={`Filter ${leftItem.name} in Menu`}
             >
               <div className="relative w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36 flex items-center justify-center animate-food-float-delayed transform -rotate-6 group-hover:rotate-0 group-hover:scale-105 transition-all duration-300">
-                <div className="w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black/35 border border-white/15 shadow-xl flex items-center justify-center p-1 group-hover:border-amber-400/60 transition-colors">
+                <div className="w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black/35 border border-white/15 shadow-xl flex items-center justify-center p-1 group-hover:border-white/40 transition-colors">
                   <img
                     src={leftItem.stickerUrl || '/stickers/burger.jpg'}
                     alt={leftItem.name}
@@ -101,9 +111,12 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
                 </div>
               </div>
               {/* Pill Label */}
-              <div className="mt-1.5 sm:mt-2.5 inline-flex items-center gap-1 bg-white/15 backdrop-blur-md text-amber-300 text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 rounded-full border border-white/20 group-hover:bg-amber-400 group-hover:text-stone-950 transition-colors shadow-2xs">
+              <div
+                className="mt-1.5 sm:mt-2.5 inline-flex items-center gap-1 bg-white/15 backdrop-blur-md text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 rounded-full border border-white/20 transition-colors shadow-2xs"
+                style={{ color: accentColor }}
+              >
                 {leftItem.price && <span>{leftItem.price}</span>}
-                {leftItem.price && <span className="text-white/60 group-hover:text-stone-700">•</span>}
+                {leftItem.price && <span className="text-white/60">•</span>}
                 <span>{leftItem.name}</span>
               </div>
             </div>
@@ -128,9 +141,15 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
                 )}
 
                 {/* Glowing Aura Behind Center Item */}
-                <div className="absolute inset-0 rounded-full blur-xl bg-amber-500/35 animate-pulse pointer-events-none" />
+                <div
+                  className="absolute inset-0 rounded-full blur-xl opacity-60 animate-pulse pointer-events-none"
+                  style={{ backgroundColor: accentColor }}
+                />
 
-                <div className="w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black/45 border border-amber-400/40 shadow-2xl flex items-center justify-center p-1 group-hover:border-amber-400 transition-colors">
+                <div
+                  className="w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black/45 border shadow-2xl flex items-center justify-center p-1 transition-colors"
+                  style={{ borderColor: `${accentColor}60` }}
+                >
                   <img
                     src={centerItem.stickerUrl || '/stickers/tea.jpg'}
                     alt={centerItem.name}
@@ -140,9 +159,16 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
               </div>
 
               {/* Pill Label for Center Delicacy */}
-              <div className="mt-1.5 sm:mt-2.5 inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 text-[10px] sm:text-xs font-black px-2.5 sm:px-3.5 py-0.5 rounded-full shadow-md ring-2 ring-amber-400/40">
+              <div
+                className="mt-1.5 sm:mt-2.5 inline-flex items-center gap-1 text-[10px] sm:text-xs font-black px-2.5 sm:px-3.5 py-0.5 rounded-full shadow-md ring-2"
+                style={{
+                  backgroundColor: accentColor,
+                  color: primaryColor,
+                  boxShadow: `0 0 12px ${accentColor}60`,
+                }}
+              >
                 {centerItem.price && <span>{centerItem.price}</span>}
-                {centerItem.price && <span className="text-stone-700">•</span>}
+                {centerItem.price && <span className="opacity-70">•</span>}
                 <span>{centerItem.name}</span>
               </div>
             </div>
@@ -157,7 +183,7 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
               title={`Filter ${rightItem.name} in Menu`}
             >
               <div className="relative w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36 flex items-center justify-center animate-food-float transform rotate-6 group-hover:rotate-0 group-hover:scale-105 transition-all duration-300">
-                <div className="w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black/35 border border-white/15 shadow-xl flex items-center justify-center p-1 group-hover:border-amber-400/60 transition-colors">
+                <div className="w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black/35 border border-white/15 shadow-xl flex items-center justify-center p-1 group-hover:border-white/40 transition-colors">
                   <img
                     src={rightItem.stickerUrl || '/stickers/samosa.jpg'}
                     alt={rightItem.name}
@@ -166,9 +192,12 @@ export const Hero: React.FC<HeroProps> = ({ settings, onSelectCraving }) => {
                 </div>
               </div>
               {/* Pill Label */}
-              <div className="mt-1.5 sm:mt-2.5 inline-flex items-center gap-1 bg-white/15 backdrop-blur-md text-amber-300 text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 rounded-full border border-white/20 group-hover:bg-amber-400 group-hover:text-stone-950 transition-colors shadow-2xs">
+              <div
+                className="mt-1.5 sm:mt-2.5 inline-flex items-center gap-1 bg-white/15 backdrop-blur-md text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 rounded-full border border-white/20 transition-colors shadow-2xs"
+                style={{ color: accentColor }}
+              >
                 {rightItem.price && <span>{rightItem.price}</span>}
-                {rightItem.price && <span className="text-white/60 group-hover:text-stone-700">•</span>}
+                {rightItem.price && <span className="text-white/60">•</span>}
                 <span>{rightItem.name}</span>
               </div>
             </div>

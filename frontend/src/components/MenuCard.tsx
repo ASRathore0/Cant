@@ -5,9 +5,20 @@ import { MenuItem } from '../types';
 interface MenuCardProps {
   item: MenuItem;
   onSelect?: (item: MenuItem) => void;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  bgColor?: string;
 }
 
-export const MenuCard: React.FC<MenuCardProps> = ({ item, onSelect }) => {
+export const MenuCard: React.FC<MenuCardProps> = ({
+  item,
+  onSelect,
+  primaryColor = '#062D1F',
+  secondaryColor = '#075C35',
+  accentColor = '#E8C928',
+  bgColor = '#FAF8F1',
+}) => {
   const isAvailable = item.is_available;
 
   return (
@@ -15,7 +26,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onSelect }) => {
       onClick={() => onSelect && onSelect(item)}
       className={`group relative bg-white rounded-2xl lg:rounded-3xl border transition-all duration-200 p-3 sm:p-3.5 lg:p-4 flex items-start gap-2.5 sm:gap-3.5 lg:gap-4 cursor-pointer active:scale-[0.99] hover:-translate-y-0.5 hover:shadow-md ${
         isAvailable
-          ? 'border-stone-200/90 hover:border-[#075C35]/50 shadow-app-card'
+          ? 'border-stone-200/90 shadow-app-card'
           : 'border-stone-200 bg-stone-50/70 opacity-75'
       }`}
     >
@@ -30,8 +41,15 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onSelect }) => {
             </div>
 
             {item.is_featured && isAvailable && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-bold bg-[#E8C928]/30 text-[#062D1F] border border-[#E8C928]/40">
-                <Sparkles className="w-2.5 h-2.5 text-[#062D1F]" />
+              <span
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-bold border"
+                style={{
+                  backgroundColor: `${accentColor}25`,
+                  color: primaryColor,
+                  borderColor: `${accentColor}50`,
+                }}
+              >
+                <Sparkles className="w-2.5 h-2.5" style={{ color: primaryColor }} />
                 Bestseller
               </span>
             )}
@@ -50,13 +68,13 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onSelect }) => {
           </div>
 
           {/* Item Name */}
-          <h4 className="font-serif font-bold text-xs sm:text-[15px] lg:text-base text-[#1A1D1A] group-hover:text-[#075C35] transition-colors leading-snug line-clamp-2">
+          <h4 className="font-serif font-bold text-xs sm:text-[15px] lg:text-base text-[#1A1D1A] group-hover:text-stone-900 transition-colors leading-snug line-clamp-2">
             {item.name}
           </h4>
 
           {/* Price */}
           <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="font-serif font-black text-xs sm:text-[15px] lg:text-base text-[#075C35]">
+            <span className="font-serif font-black text-xs sm:text-[15px] lg:text-base" style={{ color: secondaryColor }}>
               {item.formatted_price}
             </span>
             {item.price_type === 'mrp' && (
@@ -73,8 +91,15 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onSelect }) => {
 
           {/* Pricing Note (for ranges or flags like Poha, Chai/Coffee, Shakes) */}
           {item.pricing_note && (
-            <div className="mt-1.5 inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-[#062D1F] bg-[#FAF8F1] border border-[#E3E0D6] rounded px-1.5 py-0.5 max-w-full font-medium">
-              <Info className="w-2.5 h-2.5 text-[#E8C928] shrink-0" />
+            <div
+              className="mt-1.5 inline-flex items-center gap-1 text-[9px] sm:text-[10px] rounded px-1.5 py-0.5 max-w-full font-medium border"
+              style={{
+                color: primaryColor,
+                backgroundColor: bgColor,
+                borderColor: `${primaryColor}20`,
+              }}
+            >
+              <Info className="w-2.5 h-2.5 shrink-0" style={{ color: accentColor }} />
               <span className="truncate">{item.pricing_note}</span>
             </div>
           )}
@@ -87,10 +112,13 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onSelect }) => {
               {item.serving_info}
             </span>
           ) : (
-            <span className="text-[10px] sm:text-xs text-stone-400">Pure Veg</span>
+            <span className="text-[10px] sm:text-xs text-stone-400">Fresh Preparation</span>
           )}
 
-          <span className="text-[10px] sm:text-xs font-bold text-[#075C35] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+          <span
+            className="text-[10px] sm:text-xs font-bold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform"
+            style={{ color: secondaryColor }}
+          >
             <span>View Dish</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </span>

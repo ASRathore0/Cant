@@ -81,7 +81,7 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
           {/* Location */}
           <div className="flex items-start gap-2.5 bg-white/5 p-4 rounded-xl border border-white/10">
-            <MapPin className="w-4 h-4 text-[#E8C928] shrink-0 mt-0.5" />
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accentColor }} />
             <div>
               <p className="font-bold text-white text-sm">Counter Location</p>
               <p className="text-stone-300 mt-1 leading-relaxed">
@@ -92,7 +92,7 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
 
           {/* Hours */}
           <div className="flex items-start gap-2.5 bg-white/5 p-4 rounded-xl border border-white/10">
-            <Clock className="w-4 h-4 text-[#E8C928] shrink-0 mt-0.5" />
+            <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accentColor }} />
             <div>
               <p className="font-bold text-white text-sm">Kitchen Timings</p>
               <p className="text-stone-300 mt-1 leading-relaxed">
@@ -101,15 +101,17 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
             </div>
           </div>
 
-          {/* Office & Armed Forces */}
+          {/* Office & Special Offers */}
           <div className="flex items-start gap-2.5 bg-white/5 p-4 rounded-xl border border-white/10 sm:col-span-2 lg:col-span-1">
-            <Award className="w-4 h-4 text-[#E8C928] shrink-0 mt-0.5" />
+            <Award className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accentColor }} />
             <div>
-              <p className="font-bold text-white text-sm">Discounts & Office Desk</p>
+              <p className="font-bold text-white text-sm">
+                {settings?.discount_badge_title || 'Discounts & Offers'}
+              </p>
               <p className="text-stone-300 mt-1 leading-relaxed">
                 {isArmyDiscountActive
-                  ? (settings?.army_discount_text || '10% Discount for Indian Armed Forces personnel & veterans with valid ID.')
-                  : 'Fast packing and pickup for Gaur City office teams.'}
+                  ? (settings?.discount_badge_text || settings?.army_discount_text || 'Special discount available at counter.')
+                  : (settings?.discount_badge_text || 'Fresh food prepared daily with highest quality ingredients.')}
               </p>
             </div>
           </div>
@@ -117,7 +119,7 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
 
         {/* Copyright */}
         <div className="pt-4 border-t border-white/10 text-center text-[11px] sm:text-xs text-stone-400">
-          <p>© {new Date().getFullYear()} Annapoorna Canteen. Food With Respect.</p>
+          <p>© {new Date().getFullYear()} {restaurantName}. All Rights Reserved.</p>
         </div>
       </div>
     </footer>

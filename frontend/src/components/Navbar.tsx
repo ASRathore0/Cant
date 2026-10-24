@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import { Phone, MessageCircle, MapPin, Lock, ChevronDown, Building2, Check, Menu, X, Clock, Sparkles } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { RestaurantSettings, Canteen } from '../types';
+import { Phone, MessageCircle, MapPin, Lock, Menu, X, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { RestaurantSettings } from '../types';
 
 interface NavbarProps {
   settings: RestaurantSettings | null;
-  canteens?: Canteen[];
   activeCanteenSlug?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ settings, canteens = [], activeCanteenSlug }) => {
-  const navigate = useNavigate();
-  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
+export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const phone = settings?.phone || '+91 98765 43210';
@@ -70,53 +67,6 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, canteens = [], activeC
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                   {pureVegLabel}
                 </span>
-
-                {/* Multi-canteen switcher toggle if 2+ canteens exist (Desktop) */}
-                {canteens.length > 1 && (
-                  <div className="relative hidden sm:block">
-                    <button
-                      onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-                      className="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-[#E8C928] border border-white/20 transition-all ml-1 shrink-0"
-                      title="Switch Branch / Canteen"
-                    >
-                      <Building2 className="w-3 h-3" />
-                      <span>Outlet</span>
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
-
-                    {isSwitcherOpen && (
-                      <div className="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-stone-200 py-1.5 z-50 text-stone-800 animate-in fade-in slide-in-from-top-2">
-                        <div className="px-3 py-1.5 border-b border-stone-100 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                          Select Canteen / Outlet
-                        </div>
-                        {canteens.map((c) => {
-                          const isCurrent = (activeCanteenSlug && c.slug === activeCanteenSlug) || (!activeCanteenSlug && c.is_default);
-                          return (
-                            <button
-                              key={c.id}
-                              onClick={() => {
-                                setIsSwitcherOpen(false);
-                                navigate(`/menu?canteen=${c.slug}`);
-                              }}
-                              className={`w-full px-3 py-2 text-left flex items-center justify-between text-xs transition-colors hover:bg-stone-50 ${
-                                isCurrent ? 'font-bold text-[#063D29] bg-emerald-50/50' : 'text-stone-700'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 truncate">
-                                <div
-                                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                                  style={{ backgroundColor: c.primary_color }}
-                                />
-                                <span className="truncate">{c.name}</span>
-                              </div>
-                              {isCurrent && <Check className="w-3.5 h-3.5 text-[#075C35] shrink-0" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-stone-300 mt-0.5 truncate">
@@ -140,21 +90,23 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, canteens = [], activeC
             {phone && (
               <a
                 href={`tel:${cleanPhone}`}
-                className="hidden md:inline-flex h-8 lg:h-9 px-2.5 lg:px-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 items-center justify-center gap-1.5 text-[#E8C928] transition-all active:scale-95 text-xs font-bold"
+                className="hidden md:inline-flex h-8 lg:h-9 px-2.5 lg:px-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 items-center justify-center gap-1.5 transition-all active:scale-95 text-xs font-bold"
+                style={{ color: accentColor }}
                 title="Call Counter"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span className="text-white/90">Call:</span>
-                <span className="text-[#E8C928]">{phone}</span>
+                <span style={{ color: accentColor }}>{phone}</span>
               </a>
             )}
 
             {whatsapp && (
               <a
-                href={`https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent('Hello Annapoorna Canteen, I would like to inquire about today\'s fresh menu or place an order.')}`}
+                href={`https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(`Hello ${restaurantName}, I would like to inquire about today's fresh menu or place an order.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-8 lg:h-9 px-2.5 lg:px-3.5 rounded-full bg-[#15803d] hover:bg-[#166534] text-white flex items-center justify-center gap-1.5 transition-all active:scale-95 text-xs font-bold shadow-xs"
+                className="h-8 lg:h-9 px-2.5 lg:px-3.5 rounded-full text-white flex items-center justify-center gap-1.5 transition-all active:scale-95 text-xs font-bold shadow-xs hover:brightness-110"
+                style={{ backgroundColor: secondaryColor }}
                 title="WhatsApp Order"
               >
                 <MessageCircle className="w-3.5 h-3.5 text-white" />
@@ -178,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, canteens = [], activeC
               title="Open Navigation Menu"
               aria-label="Navigation Menu"
             >
-              <Menu className="w-4 h-4 text-amber-300" />
+              <Menu className="w-4 h-4" style={{ color: accentColor }} />
             </button>
           </div>
         </div>
@@ -188,14 +140,17 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, canteens = [], activeC
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div
-            className="w-80 max-w-[85vw] h-full bg-[#062D1F] text-white p-5 flex flex-col justify-between shadow-2xl border-l border-white/10 animate-in slide-in-from-right duration-300"
+            className="w-80 max-w-[85vw] h-full text-white p-5 flex flex-col justify-between shadow-2xl border-l border-white/10 animate-in slide-in-from-right duration-300"
             style={{ backgroundColor: primaryColor }}
           >
             {/* Drawer Header */}
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-white p-0.5 border border-amber-400">
+                  <div
+                    className="w-8 h-8 rounded-full overflow-hidden bg-white p-0.5"
+                    style={{ border: `1.5px solid ${accentColor}` }}
+                  >
                     <img
                       src={logoUrl}
                       alt={restaurantName}
@@ -210,7 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, canteens = [], activeC
                   </div>
                   <div>
                     <h4 className="font-serif font-black text-sm text-white">{restaurantName}</h4>
-                    <span className="text-[10px] text-amber-300 font-bold uppercase">{pureVegLabel}</span>
+                    <span className="text-[10px] font-bold uppercase" style={{ color: accentColor }}>{pureVegLabel}</span>
                   </div>
                 </div>
                 <button
@@ -220,36 +175,6 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, canteens = [], activeC
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
-              {/* Outlet Switcher inside Drawer */}
-              {canteens.length > 1 && (
-                <div className="py-4 border-b border-white/10">
-                  <div className="text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Select Canteen Branch</span>
-                  </div>
-                  <div className="space-y-1">
-                    {canteens.map((c) => {
-                      const isCurrent = (activeCanteenSlug && c.slug === activeCanteenSlug) || (!activeCanteenSlug && c.is_default);
-                      return (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setIsDrawerOpen(false);
-                            navigate(`/menu?canteen=${c.slug}`);
-                          }}
-                          className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between text-xs transition-colors ${
-                            isCurrent ? 'bg-amber-400 text-stone-950 font-black shadow-xs' : 'bg-white/5 hover:bg-white/10 text-stone-200'
-                          }`}
-                        >
-                          <span className="truncate">{c.name}</span>
-                          {isCurrent && <Check className="w-3.5 h-3.5 text-stone-950" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               {/* Quick Actions List */}
               <div className="py-4 space-y-2.5">
