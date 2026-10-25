@@ -221,8 +221,8 @@ export const adminApi = {
   },
 
   // Settings
-  getSettings: async () => {
-    const res = await apiClient.get<{ settings: RestaurantSettings }>('/admin/settings');
+  getSettings: async (params?: { canteen_id?: number; canteen?: string }) => {
+    const res = await apiClient.get<{ settings: RestaurantSettings }>('/admin/settings', { params });
     return res.data.settings;
   },
 

@@ -18,13 +18,22 @@ class AdminSettingController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        if ($user && $user->canteen_id) {
+        $canteen = null;
+
+        if ($request->filled('canteen_id')) {
+            $canteen = \App\Models\Canteen::find($request->query('canteen_id'));
+        } elseif ($request->filled('canteen')) {
+            $canteen = \App\Models\Canteen::where('slug', $request->query('canteen'))->first();
+        } elseif ($user && $user->canteen_id) {
             $canteen = \App\Models\Canteen::find($user->canteen_id);
-            if ($canteen) {
-                return response()->json([
-                    'settings' => $canteen->toSettingsArray(),
-                ]);
-            }
+        } else {
+            $canteen = \App\Models\Canteen::getDefault();
+        }
+
+        if ($canteen) {
+            return response()->json([
+                'settings' => $canteen->toSettingsArray(),
+            ]);
         }
 
         $settings = RestaurantSetting::getAllSettings();
@@ -58,8 +67,16 @@ class AdminSettingController extends Controller
             unset($validated['logo']);
         }
 
-        if ($user && $user->canteen_id) {
-            $canteen = \App\Models\Canteen::findOrFail($user->canteen_id);
+        $canteen = null;
+        if ($request->filled('canteen_id')) {
+            $canteen = \App\Models\Canteen::find($request->input('canteen_id'));
+        } elseif ($user && $user->canteen_id) {
+            $canteen = \App\Models\Canteen::find($user->canteen_id);
+        } else {
+            $canteen = \App\Models\Canteen::getDefault();
+        }
+
+        if ($canteen) {
 
             if (isset($validated['restaurant_name'])) {
                 $canteen->name = $validated['restaurant_name'];
