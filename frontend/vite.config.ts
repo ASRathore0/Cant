@@ -7,5 +7,15 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    proxy: {
+      '/stickers': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/storage': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
 });

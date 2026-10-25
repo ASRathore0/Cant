@@ -567,12 +567,35 @@ class AdminCanteenController extends Controller
         $folder = $request->input('folder', 'stickers');
         $file = $request->file('image');
         $safeName = 'sticker_' . time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+
+        // 1. Store via standard Laravel storage disk
         $path = $file->storeAs($folder, $safeName, 'public');
-        $url = '/storage/' . $path;
+
+        // 2. Direct copy to public_path($folder) - bypasses symlinks entirely (prevents 403 Forbidden on Hostinger/Apache)
+        $publicDir = public_path($folder);
+        if (!file_exists($publicDir)) {
+            @mkdir($publicDir, 0755, true);
+        }
+        $publicFile = $publicDir . DIRECTORY_SEPARATOR . $safeName;
+        @copy($file->getRealPath(), $publicFile);
+        @chmod($publicFile, 0644);
+
+        // 3. Direct copy to public_path('storage/' . $folder) in case /storage/ is referenced
+        $publicStorageDir = public_path('storage' . DIRECTORY_SEPARATOR . $folder);
+        if (!file_exists($publicStorageDir)) {
+            @mkdir($publicStorageDir, 0755, true);
+        }
+        $publicStorageFile = $publicStorageDir . DIRECTORY_SEPARATOR . $safeName;
+        @copy($file->getRealPath(), $publicStorageFile);
+        @chmod($publicStorageFile, 0644);
+
+        // Best URL: direct public path /stickers/... (matches other built-in stickers)
+        $url = '/' . $folder . '/' . $safeName;
 
         return response()->json([
             'success' => true,
             'url' => $url,
+            'storage_url' => '/storage/' . $path,
             'full_url' => url($url),
             'message' => 'Image uploaded successfully',
         ]);
