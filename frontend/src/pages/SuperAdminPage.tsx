@@ -279,6 +279,33 @@ export const SuperAdminPage: React.FC = () => {
     });
   };
 
+  const [uploadingTrioIdx, setUploadingTrioIdx] = useState<number | null>(null);
+  const trioFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleTrioFileUpload = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      addToast('error', 'Image file must be under 5MB.');
+      return;
+    }
+
+    setUploadingTrioIdx(idx);
+    try {
+      const res = await adminApi.uploadMedia(file, 'stickers');
+      handleUpdateTrioItem(idx, 'stickerUrl', res.url);
+      addToast('success', `Icon/Sticker for Item ${idx + 1} uploaded successfully!`);
+    } catch (err: any) {
+      console.error('Failed to upload sticker:', err);
+      const msg = err.response?.data?.message || 'Failed to upload image.';
+      addToast('error', msg);
+    } finally {
+      setUploadingTrioIdx(null);
+      e.target.value = '';
+    }
+  };
+
   const handleSelectCanteenForStudio = (canteen: Canteen) => {
     setSelectedCanteen(canteen);
     populateEditForm(canteen);
@@ -2304,11 +2331,16 @@ export const SuperAdminPage: React.FC = () => {
                                 </div>
                               </div>
 
-                              {/* Sticker Icon Picker */}
-                              <div>
-                                <label className="block text-[10px] font-bold text-stone-600 mb-1">
-                                  Icon / Delicacy Sticker
-                                </label>
+                              {/* Sticker Icon Picker with Manual Upload & Custom URL */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="block text-[10px] font-bold text-stone-700">
+                                    Icon / Delicacy Sticker or Image
+                                  </label>
+                                  <span className="text-[10px] text-stone-500 font-medium">Presets or upload custom image</span>
+                                </div>
+
+                                {/* Preset Badges */}
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   {STICKER_PRESETS.map((sticker) => {
                                     const isSelected = item.stickerUrl === sticker.url;
@@ -2330,15 +2362,90 @@ export const SuperAdminPage: React.FC = () => {
                                   })}
                                 </div>
 
-                                <div className="mt-1.5 flex items-center gap-2">
-                                  <span className="text-[10px] text-stone-500 font-mono">Custom URL:</span>
-                                  <input
-                                    type="text"
-                                    value={item.stickerUrl}
-                                    onChange={(e) => handleUpdateTrioItem(idx, 'stickerUrl', e.target.value)}
-                                    placeholder="/stickers/burger.jpg or https://..."
-                                    className="flex-1 px-2 py-1 rounded-lg border border-stone-300 text-xs font-mono bg-white"
-                                  />
+                                {/* Manual Upload & Current Active Preview Card */}
+                                <div className="p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    {/* Current Thumbnail Preview */}
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 flex-shrink-0 flex items-center justify-center shadow-2xs">
+                                        {item.stickerUrl ? (
+                                          <img
+                                            src={item.stickerUrl}
+                                            alt={item.name || 'Sticker'}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              (e.target as HTMLElement).style.display = 'none';
+                                            }}
+                                          />
+                                        ) : (
+                                          <ImageIcon className="w-4 h-4 text-stone-400" />
+                                        )}
+                                      </div>
+                                      <div>
+                                        <p className="text-[11px] font-bold text-stone-800 leading-tight">
+                                          {item.stickerUrl ? 'Active Delicacy Image' : 'No image / sticker selected'}
+                                        </p>
+                                        <p className="text-[10px] text-stone-400 font-mono truncate max-w-[170px] sm:max-w-[260px]">
+                                          {item.stickerUrl || 'Choose preset or upload file'}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* Upload Button */}
+                                    <div>
+                                      <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                                        ref={(el) => {
+                                          trioFileInputRefs.current[idx] = el;
+                                        }}
+                                        onChange={(e) => handleTrioFileUpload(idx, e)}
+                                        className="hidden"
+                                      />
+                                      <button
+                                        type="button"
+                                        disabled={uploadingTrioIdx === idx}
+                                        onClick={() => trioFileInputRefs.current[idx]?.click()}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#075C35] hover:bg-[#063D29] text-white text-xs font-bold rounded-lg shadow-2xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                                      >
+                                        {uploadingTrioIdx === idx ? (
+                                          <>
+                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span>Uploading...</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Upload className="w-3.5 h-3.5 text-[#E8C928]" />
+                                            <span>Upload Image / Sticker</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Custom URL Input Field */}
+                                  <div className="flex items-center gap-2 pt-1.5 border-t border-stone-100">
+                                    <span className="text-[10px] text-stone-500 font-mono flex-shrink-0">
+                                      Custom URL / Path:
+                                    </span>
+                                    <input
+                                      type="text"
+                                      value={item.stickerUrl || ''}
+                                      onChange={(e) => handleUpdateTrioItem(idx, 'stickerUrl', e.target.value)}
+                                      placeholder="/stickers/burger.jpg or https://..."
+                                      className="flex-1 px-2 py-1 rounded-lg border border-stone-200 text-xs font-mono bg-stone-50 focus:bg-white text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#075C35]"
+                                    />
+                                    {item.stickerUrl && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateTrioItem(idx, 'stickerUrl', '')}
+                                        className="text-[10px] font-bold text-red-500 hover:text-red-700 px-1.5 py-0.5 rounded hover:bg-red-50 transition-colors"
+                                        title="Clear Image"
+                                      >
+                                        Clear
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>

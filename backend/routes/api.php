@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/categories/reorder', [AdminCategoryController::class, 'reorder']);
 
         // Super Admin: Canteens Onboarding & Theme Management
+        Route::post('/canteens/upload-media', [AdminCanteenController::class, 'uploadMedia']);
         Route::get('/canteens', [AdminCanteenController::class, 'index']);
         Route::post('/canteens', [AdminCanteenController::class, 'store']);
         Route::get('/canteens/{id}', [AdminCanteenController::class, 'show']);

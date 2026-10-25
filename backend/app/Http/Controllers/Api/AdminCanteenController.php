@@ -266,6 +266,9 @@ class AdminCanteenController extends Controller
             'is_default' => ['nullable'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
             'favicon' => ['nullable', 'file', 'mimes:ico,png,svg,jpg,jpeg,webp', 'max:2048'],
+            'trio_file_0' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:5120'],
+            'trio_file_1' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:5120'],
+            'trio_file_2' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:5120'],
         ]);
 
         if ($request->hasFile('logo')) {
@@ -308,6 +311,22 @@ class AdminCanteenController extends Controller
             if (is_string($validated['hero_trio'])) {
                 $validated['hero_trio'] = json_decode($validated['hero_trio'], true);
             }
+        }
+
+        // Handle uploaded trio sticker files if sent along with form
+        if (isset($validated['hero_trio']) && is_array($validated['hero_trio'])) {
+            $trioArray = $validated['hero_trio'];
+            for ($i = 0; $i < 3; $i++) {
+                if ($request->hasFile("trio_file_{$i}")) {
+                    $file = $request->file("trio_file_{$i}");
+                    $safeName = 'sticker_' . time() . '_' . $i . '_' . Str::random(6) . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('stickers', $safeName, 'public');
+                    if (isset($trioArray[$i])) {
+                        $trioArray[$i]['stickerUrl'] = '/storage/' . $path;
+                    }
+                }
+            }
+            $validated['hero_trio'] = $trioArray;
         }
 
         $canteen->update($validated);
@@ -532,6 +551,30 @@ class AdminCanteenController extends Controller
                 ] : null,
             ],
             'canteen' => $canteen,
+        ]);
+    }
+
+    /**
+     * Upload an icon, sticker or delicacy image for hero showcase or branding.
+     */
+    public function uploadMedia(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:5120'],
+            'folder' => ['nullable', 'string', 'in:stickers,branding,delicacies'],
+        ]);
+
+        $folder = $request->input('folder', 'stickers');
+        $file = $request->file('image');
+        $safeName = 'sticker_' . time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs($folder, $safeName, 'public');
+        $url = '/storage/' . $path;
+
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+            'full_url' => url($url),
+            'message' => 'Image uploaded successfully',
         ]);
     }
 }

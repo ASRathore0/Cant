@@ -281,6 +281,20 @@ export const adminApi = {
     return res.data;
   },
 
+  uploadMedia: async (file: File, folder: string = 'stickers') => {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', folder);
+    const res = await apiClient.post<{ success: boolean; url: string; full_url: string; message: string }>(
+      '/admin/canteens/upload-media',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return res.data;
+  },
+
   setDefaultCanteen: async (id: number) => {
     const res = await apiClient.post<{
       message: string;
