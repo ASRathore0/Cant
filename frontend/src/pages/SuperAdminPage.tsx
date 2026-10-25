@@ -37,6 +37,8 @@ import {
   Lock,
   User as UserIcon,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { SuperAdminLayout } from '../components/SuperAdminLayout';
 import { Toast, ToastMessage } from '../components/Toast';
 import { adminApi, publicApi } from '../services/api';
@@ -131,6 +133,9 @@ export const SuperAdminPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [emulatingCanteenId, setEmulatingCanteenId] = useState<number | null>(null);
 
   // Modals
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
@@ -570,6 +575,46 @@ export const SuperAdminPage: React.FC = () => {
     }
   };
 
+  const handleEmulateManager = async (canteen: Canteen) => {
+    setEmulatingCanteenId(canteen.id);
+    try {
+      // 1. Back up current Super Admin session to restore later
+      const currentToken = localStorage.getItem('annapoorna_token');
+      const currentUser = localStorage.getItem('annapoorna_user');
+      if (currentToken && currentUser) {
+        localStorage.setItem(
+          'emulating_from_super_admin',
+          JSON.stringify({
+            token: currentToken,
+            user: JSON.parse(currentUser),
+            emulating_canteen_id: canteen.id,
+            emulating_canteen_name: canteen.name,
+          })
+        );
+      }
+
+      // 2. Obtain manager session without password
+      const res = await adminApi.emulateCanteenManager(canteen.id);
+
+      // 3. Switch active user context to manager
+      login(res.token, res.user);
+
+      addToast('success', `Emulating ${res.user.name} for ${canteen.name}. Opening Manager Dashboard...`);
+
+      // 4. Navigate to manager dashboard
+      setTimeout(() => {
+        navigate('/admin/dashboard');
+      }, 350);
+    } catch (err: any) {
+      console.error('Failed to emulate manager:', err);
+      localStorage.removeItem('emulating_from_super_admin');
+      const msg = err.response?.data?.message || 'Failed to emulate manager account.';
+      addToast('error', msg);
+    } finally {
+      setEmulatingCanteenId(null);
+    }
+  };
+
   const handleSetDefault = async (canteen: Canteen) => {
     try {
       await adminApi.setDefaultCanteen(canteen.id);
@@ -842,13 +887,25 @@ export const SuperAdminPage: React.FC = () => {
 
                   {/* Card Actions Footer */}
                   <div className="bg-stone-50 px-4 py-3 border-t border-stone-100 flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => handleSelectCanteenForStudio(canteen)}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#075C35] hover:text-[#04281B] transition-colors"
-                    >
-                      <Palette className="w-3.5 h-3.5" />
-                      <span>Studio</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEmulateManager(canteen)}
+                        disabled={emulatingCanteenId === canteen.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#10B981] to-[#059669] hover:from-[#059669] hover:to-[#047857] shadow-2xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                        title={`Login without password as manager of ${canteen.name}`}
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-100" />
+                        <span>{emulatingCanteenId === canteen.id ? 'Connecting...' : 'Emulate'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleSelectCanteenForStudio(canteen)}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#075C35] hover:text-[#04281B] transition-colors px-2 py-1.5 rounded-lg hover:bg-white"
+                      >
+                        <Palette className="w-3.5 h-3.5" />
+                        <span>Studio</span>
+                      </button>
+                    </div>
 
                     <div className="flex items-center gap-1">
                       <button
@@ -1628,22 +1685,43 @@ export const SuperAdminPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-stone-100 space-y-2">
                     <button
-                      onClick={() => handleOpenManagerModal(canteen)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#075C35] hover:bg-emerald-50 border border-emerald-200 transition-colors"
+                      onClick={() => handleEmulateManager(canteen)}
+                      disabled={emulatingCanteenId === canteen.id}
+                      className="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#10B981] via-[#059669] to-[#047857] hover:from-[#059669] hover:to-[#065F46] shadow-sm hover:shadow transition-all active:scale-98 disabled:opacity-60 cursor-pointer"
+                      title={`Login without password as manager of ${canteen.name}`}
                     >
-                      <Key className="w-3.5 h-3.5" />
-                      <span>{manager ? 'Reset Password' : 'Add Manager'}</span>
+                      {emulatingCanteenId === canteen.id ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Emulating Manager...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-4 h-4 text-emerald-100" />
+                          <span>Emulate Manager (Login Without Password)</span>
+                        </>
+                      )}
                     </button>
 
-                    <button
-                      onClick={() => handleSelectCanteenForStudio(canteen)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100 transition-colors"
-                    >
-                      <Palette className="w-3.5 h-3.5" />
-                      <span>Studio</span>
-                    </button>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => handleOpenManagerModal(canteen)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#075C35] hover:bg-emerald-50 border border-emerald-200 transition-colors"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                        <span>{manager ? 'Reset Password' : 'Add Manager'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleSelectCanteenForStudio(canteen)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100 transition-colors"
+                      >
+                        <Palette className="w-3.5 h-3.5" />
+                        <span>Studio</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

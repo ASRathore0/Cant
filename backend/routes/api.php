@@ -63,6 +63,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/canteens/{id}/set-default', [AdminCanteenController::class, 'setDefault']);
         Route::post('/canteens/{id}/clone-menu', [AdminCanteenController::class, 'cloneMenu']);
         Route::post('/canteens/{id}/manager', [AdminCanteenController::class, 'upsertManager']);
+        Route::post('/canteens/{id}/emulate-manager', [AdminCanteenController::class, 'emulateManager']);
+        Route::post('/users/{id}/emulate', [AdminCanteenController::class, 'emulateUser']);
 
         // Settings Management
         Route::get('/settings', [AdminSettingController::class, 'index']);

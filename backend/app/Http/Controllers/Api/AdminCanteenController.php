@@ -10,6 +10,7 @@ use App\Models\RestaurantSetting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AdminCanteenController extends Controller
@@ -432,5 +433,105 @@ class AdminCanteenController extends Controller
                 ]);
             }
         }
+    }
+
+    /**
+     * Emulate/impersonate a canteen's manager without password (Super Admin only).
+     */
+    public function emulateManager(Request $request, int $id): JsonResponse
+    {
+        $currentUser = $request->user();
+        if ($currentUser->role !== 'super_admin' && $currentUser->role !== 'superadmin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only Super Administrators can emulate manager accounts.',
+            ], 403);
+        }
+
+        $canteen = Canteen::findOrFail($id);
+
+        // Find existing manager for this canteen
+        $manager = User::where('canteen_id', $canteen->id)
+            ->where('role', 'manager')
+            ->first();
+
+        // If no manager found, automatically create an active manager account for this establishment
+        if (!$manager) {
+            $safeSlug = Str::slug($canteen->slug ?: $canteen->name);
+            $manager = User::create([
+                'name' => $canteen->name . ' Manager',
+                'email' => "manager.{$safeSlug}@canteen.internal",
+                'password' => Hash::make(Str::random(16)),
+                'role' => 'manager',
+                'canteen_id' => $canteen->id,
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        // Generate Sanctum token for the manager without requiring password
+        $token = $manager->createToken('emulated-by-' . $currentUser->email)->plainTextToken;
+
+        return response()->json([
+            'message' => "Successfully emulating {$manager->name} for {$canteen->name}",
+            'token' => $token,
+            'user' => [
+                'id' => $manager->id,
+                'name' => $manager->name,
+                'email' => $manager->email,
+                'role' => $manager->role,
+                'canteen_id' => $manager->canteen_id,
+                'canteen' => [
+                    'id' => $canteen->id,
+                    'name' => $canteen->name,
+                    'slug' => $canteen->slug,
+                    'logo_url' => $canteen->full_logo_url,
+                    'primary_color' => $canteen->primary_color,
+                    'secondary_color' => $canteen->secondary_color,
+                    'accent_color' => $canteen->accent_color,
+                    'bg_color' => $canteen->bg_color,
+                ],
+            ],
+            'canteen' => $canteen,
+        ]);
+    }
+
+    /**
+     * Emulate a specific user directly (Super Admin only).
+     */
+    public function emulateUser(Request $request, int $id): JsonResponse
+    {
+        $currentUser = $request->user();
+        if ($currentUser->role !== 'super_admin' && $currentUser->role !== 'superadmin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only Super Administrators can emulate accounts.',
+            ], 403);
+        }
+
+        $targetUser = User::with('canteen')->findOrFail($id);
+        $canteen = $targetUser->canteen;
+
+        $token = $targetUser->createToken('emulated-by-' . $currentUser->email)->plainTextToken;
+
+        return response()->json([
+            'message' => "Successfully emulating {$targetUser->name}",
+            'token' => $token,
+            'user' => [
+                'id' => $targetUser->id,
+                'name' => $targetUser->name,
+                'email' => $targetUser->email,
+                'role' => $targetUser->role,
+                'canteen_id' => $targetUser->canteen_id,
+                'canteen' => $canteen ? [
+                    'id' => $canteen->id,
+                    'name' => $canteen->name,
+                    'slug' => $canteen->slug,
+                    'logo_url' => $canteen->full_logo_url,
+                    'primary_color' => $canteen->primary_color,
+                    'secondary_color' => $canteen->secondary_color,
+                    'accent_color' => $canteen->accent_color,
+                    'bg_color' => $canteen->bg_color,
+                ] : null,
+            ],
+            'canteen' => $canteen,
+        ]);
     }
 }

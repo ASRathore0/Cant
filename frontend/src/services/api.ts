@@ -307,5 +307,25 @@ export const adminApi = {
     }>(`/admin/canteens/${canteenId}/manager`, data);
     return res.data;
   },
+
+  emulateCanteenManager: async (canteenId: number) => {
+    const res = await apiClient.post<{
+      message: string;
+      token: string;
+      user: User;
+      canteen: Canteen;
+    }>(`/admin/canteens/${canteenId}/emulate-manager`);
+    return res.data;
+  },
+
+  emulateUser: async (userId: number) => {
+    const res = await apiClient.post<{
+      message: string;
+      token: string;
+      user: User;
+      canteen: Canteen;
+    }>(`/admin/users/${userId}/emulate`);
+    return res.data;
+  },
 };
 

@@ -14,6 +14,7 @@ import {
   User as UserIcon,
   Building2,
   Palette,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,13 +25,32 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle }) => {
-  const { user, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isEmulating = typeof window !== 'undefined' && !!localStorage.getItem('emulating_from_super_admin');
 
   const handleLogout = async () => {
+    localStorage.removeItem('emulating_from_super_admin');
     await logout();
     navigate('/admin/login');
+  };
+
+  const handleExitEmulation = () => {
+    const raw = localStorage.getItem('emulating_from_super_admin');
+    if (raw) {
+      try {
+        const { token: savedToken, user: savedUser } = JSON.parse(raw);
+        localStorage.removeItem('emulating_from_super_admin');
+        login(savedToken, savedUser);
+        navigate('/super-admin');
+        return;
+      } catch (e) {
+        console.error('Failed to parse super admin session', e);
+      }
+    }
+    localStorage.removeItem('emulating_from_super_admin');
+    navigate('/super-admin');
   };
 
   const isSuperAdminUser = user?.role === 'super_admin' || user?.role === 'superadmin';
@@ -172,6 +192,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
             </div>
           </div>
 
+          {isEmulating && (
+            <button
+              onClick={handleExitEmulation}
+              className="w-full mb-2 flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-amber-200 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-xl transition-all shadow-sm active:scale-98"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <span>Exit Emulation</span>
+            </button>
+          )}
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-red-300 hover:text-white hover:bg-red-500/20 rounded-xl transition-colors"
@@ -192,6 +222,28 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
 
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Super Admin Emulation Active Notification Bar */}
+        {isEmulating && (
+          <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-4 sm:px-8 py-2.5 text-xs sm:text-sm font-semibold flex flex-wrap items-center justify-between gap-3 shadow-md z-30">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-3 w-3 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+              </span>
+              <span>
+                <strong>Emulation Active:</strong> Logged in without password as <strong>{user?.name}</strong> for <strong>{restaurantName}</strong>.
+              </span>
+            </div>
+            <button
+              onClick={handleExitEmulation}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-stone-900 hover:bg-amber-50 shadow-sm transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
+              <span>Exit Emulation & Return to Super Admin</span>
+            </button>
+          </div>
+        )}
+
         {/* Workspace Top Header */}
         <header className="bg-white border-b border-[#E3E0D6] px-5 sm:px-8 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
           <div>
