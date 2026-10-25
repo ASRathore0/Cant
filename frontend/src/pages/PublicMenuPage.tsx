@@ -12,16 +12,62 @@ import { Footer } from '../components/Footer';
 import { publicApi } from '../services/api';
 import { Category, MenuItem, RestaurantSettings } from '../types';
 
+const formatSlugToTitle = (rawSlug?: string | null): string => {
+  if (!rawSlug) return '';
+  return rawSlug
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export const PublicMenuPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
   const [searchParams] = useSearchParams();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [settings, setSettings] = useState<RestaurantSettings | null>(null);
+  const isFromQr = searchParams.get('from_qr') === '1' || searchParams.get('qr') === '1';
+  const canteenParam = slug || searchParams.get('canteen');
+  const cacheKey = `canteen_data_${canteenParam || 'default'}`;
+
+  // Synchronous cache hydration: Prevents 1-second flash of wrong canteen data
+  const [categories, setCategories] = useState<Category[]>(() => {
+    try {
+      const activeParam = slug || new URLSearchParams(window.location.search).get('canteen') || 'default';
+      const cached = sessionStorage.getItem(`canteen_data_${activeParam}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed?.categories)) return parsed.categories;
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  const [settings, setSettings] = useState<RestaurantSettings | null>(() => {
+    try {
+      const activeParam = slug || new URLSearchParams(window.location.search).get('canteen') || 'default';
+      const cached = sessionStorage.getItem(`canteen_data_${activeParam}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.settings) return parsed.settings;
+      }
+    } catch (e) {}
+    return null;
+  });
+
   const [activeCategoryId, setActiveCategoryId] = useState<number | 'all'>('all');
   const [isAllMenuExpanded, setIsAllMenuExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [quickFilter, setQuickFilter] = useState<'all' | 'bestsellers' | 'budget'>('all');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    try {
+      const activeParam = slug || new URLSearchParams(window.location.search).get('canteen') || 'default';
+      const cached = sessionStorage.getItem(`canteen_data_${activeParam}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.settings && Array.isArray(parsed?.categories)) return false;
+      }
+    } catch (e) {}
+    return true;
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,13 +75,10 @@ export const PublicMenuPage: React.FC = () => {
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isMenuSheetOpen, setIsMenuSheetOpen] = useState(false);
 
-  const isFromQr = searchParams.get('from_qr') === '1' || searchParams.get('qr') === '1';
-  const canteenParam = slug || searchParams.get('canteen');
-
   const fetchMenu = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) {
       setIsRefreshing(true);
-    } else {
+    } else if (!settings) {
       setIsLoading(true);
     }
     setError(null);
@@ -44,6 +87,12 @@ export const PublicMenuPage: React.FC = () => {
       const data = await publicApi.getMenu(isFromQr, canteenParam || undefined);
       setCategories(data.categories || []);
       setSettings(data.settings || null);
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          categories: data.categories || [],
+          settings: data.settings || null,
+        }));
+      } catch (e) {}
     } catch (err: any) {
       console.error('Failed to load menu:', err);
       setError('Unable to load menu right now. Please check your internet connection.');
@@ -56,6 +105,18 @@ export const PublicMenuPage: React.FC = () => {
   useEffect(() => {
     fetchMenu();
   }, [canteenParam, isFromQr]);
+
+  // Set immediate derived title even before API responds
+  useEffect(() => {
+    const derivedName = formatSlugToTitle(canteenParam);
+    if (!settings) {
+      if (derivedName) {
+        document.title = `${derivedName} | Digital Menu`;
+      } else {
+        document.title = 'Digital Smart Menu';
+      }
+    }
+  }, [canteenParam, settings]);
 
   // Dynamically update browser tab title and favicon for the active restaurant entity
   useEffect(() => {
@@ -176,6 +237,96 @@ export const PublicMenuPage: React.FC = () => {
   const secondaryColor = settings?.secondary_color || '#07402A';
   const accentColor = settings?.accent_color || '#E8C928';
   const bgColor = settings?.bg_color || '#FAF8F1';
+
+  // Show clean, branded loading skeleton during first cold load
+  if (isLoading && !settings) {
+    const derivedName = formatSlugToTitle(canteenParam) || 'Smart Digital Menu';
+    return (
+      <div className="min-h-screen flex flex-col bg-[#FAF8F1]">
+        {/* Neutral Branded App Bar */}
+        <header className="sticky top-0 z-40 bg-[#18181B] text-white shadow-app-bar border-b border-black/10 w-full">
+          <div className="max-w-xl lg:max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/10 flex items-center justify-center font-black text-amber-300 text-sm sm:text-base border border-amber-400/40 shrink-0 select-none">
+                {derivedName.charAt(0) || '🍽️'}
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-base lg:text-lg font-extrabold text-white tracking-tight truncate leading-none">
+                  {derivedName}
+                </h1>
+                <p className="text-[10px] sm:text-xs text-stone-400 mt-0.5 truncate">
+                  Opening digital menu...
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-white/10 animate-pulse" />
+              <div className="w-8 h-8 rounded-xl bg-white/10 animate-pulse" />
+            </div>
+          </div>
+        </header>
+
+        {/* Hero Banner Skeleton */}
+        <div className="max-w-xl lg:max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 w-full pt-3 pb-2">
+          <div className="w-full bg-[#27272A] rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-lg flex flex-col items-center justify-center text-center relative overflow-hidden">
+            <div className="w-32 h-4 bg-white/10 rounded-full animate-pulse mb-3" />
+            <div className="w-48 h-6 bg-white/20 rounded-lg animate-pulse mb-4" />
+            <div className="flex items-center justify-center gap-3 sm:gap-6 mt-2">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 animate-pulse" />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/15 animate-pulse" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar Skeleton */}
+        <div className="max-w-xl lg:max-w-7xl mx-auto w-full px-3.5 sm:px-6 lg:px-8 pt-2">
+          <div className="w-full h-11 bg-white border border-stone-200 rounded-2xl animate-pulse" />
+        </div>
+
+        {/* Categories Bar Skeleton */}
+        <div className="max-w-xl lg:max-w-7xl mx-auto w-full px-3.5 sm:px-6 lg:px-8 pt-3 flex gap-2 overflow-x-hidden">
+          {[72, 88, 104, 80, 92].map((w, i) => (
+            <div key={i} className="h-8 rounded-xl bg-stone-200 animate-pulse shrink-0" style={{ width: w }} />
+          ))}
+        </div>
+
+        {/* Dish Items Skeleton */}
+        <main className="flex-1 max-w-xl lg:max-w-7xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-4 space-y-3.5">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl p-3.5 border border-stone-200 flex gap-3 animate-pulse">
+              <div className="flex-1 space-y-2.5">
+                <div className="h-4 bg-stone-200 rounded w-1/4" />
+                <div className="h-5 bg-stone-200 rounded w-1/2" />
+                <div className="h-3 bg-stone-100 rounded w-3/4" />
+                <div className="h-4 bg-stone-200 rounded w-16 mt-2" />
+              </div>
+              <div className="w-20 h-20 bg-stone-200 rounded-xl shrink-0" />
+            </div>
+          ))}
+        </main>
+      </div>
+    );
+  }
+
+  // Error screen on cold failure
+  if (error && !settings) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F1] px-4">
+        <div className="bg-white border border-red-200 rounded-2xl p-6 text-center max-w-sm w-full shadow-lg">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-2" />
+          <h3 className="text-base font-bold text-red-900 font-serif">Unable to Load Menu</h3>
+          <p className="mt-1 text-xs text-red-700">{error}</p>
+          <button
+            onClick={() => fetchMenu()}
+            className="mt-4 px-5 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -323,7 +474,8 @@ export const PublicMenuPage: React.FC = () => {
             <p className="mt-1 text-xs text-red-700">{error}</p>
             <button
               onClick={() => fetchMenu()}
-              className="mt-3 px-4 py-1.5 bg-[#062D1F] text-white rounded-full text-xs font-semibold"
+              className="mt-3 px-4 py-1.5 text-white rounded-full text-xs font-semibold transition-transform active:scale-95"
+              style={{ backgroundColor: primaryColor }}
             >
               Try Again
             </button>

@@ -8,6 +8,15 @@ interface NavbarProps {
   activeCanteenSlug?: string;
 }
 
+const formatSlugToTitle = (slug?: string | null): string => {
+  if (!slug) return '';
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -16,13 +25,14 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) =
   const cleanPhone = phone.replace(/[^0-9]/g, '');
   const cleanWhatsapp = whatsapp.replace(/[^0-9]/g, '');
 
+  const derivedName = activeCanteenSlug ? formatSlugToTitle(activeCanteenSlug) : '';
+  const restaurantName = settings?.restaurant_name || derivedName || 'Digital Menu';
   const primaryColor = settings?.primary_color || '#062D1F';
   const secondaryColor = settings?.secondary_color || '#07402A';
   const accentColor = settings?.accent_color || '#E8C928';
-  const logoUrl = settings?.full_logo_url || settings?.logo_url || '/logo.png';
-  const restaurantName = settings?.restaurant_name || 'Annapoorna Canteen';
+  const logoUrl = settings?.full_logo_url || settings?.logo_url || (settings?.slug === 'annapoorna' || (!activeCanteenSlug && !settings) ? '/logo.png' : '');
   const pureVegLabel = settings?.pure_veg_label || 'Pure Veg';
-  const landmark = settings?.location_landmark || settings?.address || 'Gaur City Mall, Basement';
+  const landmark = settings?.location_landmark || settings?.address || 'Digital Menu • Order Online';
 
   return (
     <>
@@ -35,21 +45,27 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) =
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 lg:flex-initial">
             <Link
               to={activeCanteenSlug ? `/menu?canteen=${activeCanteenSlug}` : '/menu'}
-              className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-white p-0.5 shadow-xs shrink-0 hover:scale-105 transition-transform"
+              className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-white p-0.5 shadow-xs shrink-0 hover:scale-105 transition-transform flex items-center justify-center"
               style={{ border: `2px solid ${accentColor}` }}
               title={restaurantName}
             >
-              <img
-                src={logoUrl}
-                alt={restaurantName}
-                className="w-full h-full object-cover rounded-full"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.src.endsWith('/logo.png')) {
-                    target.src = '/logo.png';
-                  }
-                }}
-              />
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={restaurantName}
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div
+                  className="w-full h-full rounded-full flex items-center justify-center font-black text-sm sm:text-base select-none"
+                  style={{ backgroundColor: primaryColor, color: accentColor }}
+                >
+                  {restaurantName.charAt(0) || '🍽️'}
+                </div>
+              )}
             </Link>
 
             <div className="min-w-0 flex-1">
@@ -149,20 +165,26 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) =
               <div className="flex items-center justify-between pb-4 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="w-8 h-8 rounded-full overflow-hidden bg-white p-0.5"
+                    className="w-8 h-8 rounded-full overflow-hidden bg-white p-0.5 flex items-center justify-center shrink-0"
                     style={{ border: `1.5px solid ${accentColor}` }}
                   >
-                    <img
-                      src={logoUrl}
-                      alt={restaurantName}
-                      className="w-full h-full object-cover rounded-full"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        if (!target.src.endsWith('/logo.png')) {
-                          target.src = '/logo.png';
-                        }
-                      }}
-                    />
+                    {logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt={restaurantName}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full rounded-full flex items-center justify-center font-black text-xs select-none"
+                        style={{ backgroundColor: primaryColor, color: accentColor }}
+                      >
+                        {restaurantName.charAt(0) || '🍽️'}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h4 className="font-serif font-black text-sm text-white">{restaurantName}</h4>
@@ -197,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({ settings, activeCanteenSlug }) =
                 </a>
 
                 <a
-                  href={`https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent('Hello Annapoorna Canteen, I would like to inquire about today\'s fresh menu or place an order.')}`}
+                  href={`https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(`Hello ${restaurantName}, I would like to inquire about today's fresh menu or place an order.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#15803d]/80 hover:bg-[#15803d] text-white text-xs font-bold transition-all"

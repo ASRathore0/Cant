@@ -21,9 +21,9 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
   const primaryColor = settings?.primary_color || '#063D29';
   const secondaryColor = settings?.secondary_color || '#075C35';
   const accentColor = settings?.accent_color || '#E8C928';
-  const logoUrl = settings?.full_logo_url || settings?.logo_url || '/logo.png';
-  const restaurantName = settings?.restaurant_name || 'Annapoorna Canteen';
-  const tagline = settings?.tagline || '100% Pure Vegetarian Kitchen • Food With Respect';
+  const logoUrl = settings?.full_logo_url || settings?.logo_url || (settings?.slug === 'annapoorna' ? '/logo.png' : '');
+  const restaurantName = settings?.restaurant_name || 'Digital Menu';
+  const tagline = settings?.tagline || 'Good Food • Made Fresh • Served With Respect';
 
   return (
     <footer
@@ -35,10 +35,19 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div className="flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 shadow-sm flex-shrink-0"
+              className="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 shadow-sm flex-shrink-0 flex items-center justify-center"
               style={{ border: `2px solid ${accentColor}` }}
             >
-              <img src={logoUrl} alt={restaurantName} className="w-full h-full object-cover rounded-full" />
+              {logoUrl ? (
+                <img src={logoUrl} alt={restaurantName} className="w-full h-full object-cover rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <div
+                  className="w-full h-full rounded-full flex items-center justify-center font-black text-base select-none"
+                  style={{ backgroundColor: primaryColor, color: accentColor }}
+                >
+                  {restaurantName.charAt(0) || '🍽️'}
+                </div>
+              )}
             </div>
             <div>
               <h4 className="font-serif font-black text-lg sm:text-xl text-white leading-tight">
@@ -85,7 +94,7 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
             <div>
               <p className="font-bold text-white text-sm">Counter Location</p>
               <p className="text-stone-300 mt-1 leading-relaxed">
-                {settings?.address || 'Basement Parking, Gaur City Mall, Sector 4, Greater Noida West - 201009'}
+                {settings?.address || settings?.location_landmark || 'Fresh food served daily with care & quality ingredients.'}
               </p>
             </div>
           </div>
