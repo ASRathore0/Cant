@@ -73,7 +73,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, [selectedCanteenId]);
+  }, [selectedCanteenId, user?.canteen_id]);
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
@@ -115,8 +115,12 @@ export const AdminCategoriesPage: React.FC = () => {
         is_active: formData.is_active,
       };
 
-      if (isSuperAdmin && selectedCanteenId) {
-        payload.canteen_id = parseInt(selectedCanteenId, 10);
+      const effectiveCanteenId = isSuperAdmin
+        ? (selectedCanteenId ? parseInt(selectedCanteenId, 10) : undefined)
+        : (user?.canteen_id || undefined);
+
+      if (effectiveCanteenId) {
+        payload.canteen_id = effectiveCanteenId;
       }
 
       if (editingCategory) {

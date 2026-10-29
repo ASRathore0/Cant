@@ -17,7 +17,8 @@ class CategoryRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:120'],
-            'slug' => ['nullable', 'string', 'max:120', 'unique:categories,slug,' . $categoryId],
+            'slug' => ['nullable', 'string', 'max:120'],
+            'canteen_id' => ['nullable', 'integer', 'exists:canteens,id'],
             'description' => ['nullable', 'string', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],

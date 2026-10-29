@@ -14,6 +14,7 @@ class MenuItemRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'canteen_id' => ['nullable', 'integer', 'exists:canteens,id'],
             'category_id' => ['required', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:1000'],

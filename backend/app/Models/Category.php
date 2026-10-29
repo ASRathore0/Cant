@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -12,6 +13,7 @@ class Category extends Model
     use HasFactory;
 
     protected $fillable = [
+        'canteen_id',
         'name',
         'slug',
         'description',
@@ -20,6 +22,7 @@ class Category extends Model
     ];
 
     protected $casts = [
+        'canteen_id' => 'integer',
         'sort_order' => 'integer',
         'is_active' => 'boolean',
     ];
@@ -31,6 +34,11 @@ class Category extends Model
                 $category->slug = Str::slug($category->name);
             }
         });
+    }
+
+    public function canteen(): BelongsTo
+    {
+        return $this->belongsTo(Canteen::class);
     }
 
     public function menuItems(): HasMany

@@ -13,6 +13,7 @@ class MenuItem extends Model
     use HasFactory;
 
     protected $fillable = [
+        'canteen_id',
         'category_id',
         'name',
         'slug',
@@ -29,6 +30,7 @@ class MenuItem extends Model
     ];
 
     protected $casts = [
+        'canteen_id' => 'integer',
         'price' => 'decimal:2',
         'price_max' => 'decimal:2',
         'is_available' => 'boolean',
@@ -48,6 +50,11 @@ class MenuItem extends Model
                 $item->slug = Str::slug($item->name);
             }
         });
+    }
+
+    public function canteen(): BelongsTo
+    {
+        return $this->belongsTo(Canteen::class);
     }
 
     public function category(): BelongsTo

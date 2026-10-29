@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
+use App\Models\Canteen;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ class AdminCategoryController extends Controller
     /**
      * Display a listing of categories with item counts.
      */
-    public function index(\Illuminate\Http\Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $query = Category::withCount('menuItems');
 
@@ -39,19 +40,37 @@ class AdminCategoryController extends Controller
     public function store(CategoryRequest $request): JsonResponse
     {
         $data = $request->validated();
-        if (empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']);
-        }
-        if (!isset($data['sort_order'])) {
-            $data['sort_order'] = Category::max('sort_order') + 1;
+
+        $user = $request->user();
+        $targetCanteenId = null;
+
+        if ($user && $user->canteen_id) {
+            $targetCanteenId = (int) $user->canteen_id;
+        } elseif ($request->filled('canteen_id')) {
+            $targetCanteenId = (int) $request->input('canteen_id');
+        } else {
+            $targetCanteenId = Canteen::getDefault()?->id ?? 1;
         }
 
-        if ($request->user() && $request->user()->canteen_id) {
-            $data['canteen_id'] = $request->user()->canteen_id;
-        } elseif ($request->filled('canteen_id')) {
-            $data['canteen_id'] = (int) $request->input('canteen_id');
-        } else {
-            $data['canteen_id'] = Canteen::getDefault()?->id ?? 1;
+        $data['canteen_id'] = $targetCanteenId;
+
+        // Auto-generate unique slug
+        $baseSlug = !empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($data['name']);
+        if (empty($baseSlug)) {
+            $baseSlug = 'category';
+        }
+        $slug = $baseSlug;
+        $counter = 1;
+        while (Category::where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$targetCanteenId}";
+            if (Category::where('slug', $slug)->exists()) {
+                $slug = "{$baseSlug}-{$targetCanteenId}-" . ++$counter;
+            }
+        }
+        $data['slug'] = $slug;
+
+        if (!isset($data['sort_order']) || $data['sort_order'] === null) {
+            $data['sort_order'] = (Category::where('canteen_id', $targetCanteenId)->max('sort_order') ?? 0) + 1;
         }
 
         $category = Category::create($data);
@@ -70,7 +89,7 @@ class AdminCategoryController extends Controller
         $category = Category::withCount('menuItems')->findOrFail($id);
 
         $user = $request->user();
-        if ($user && $user->canteen_id && $category->canteen_id && $category->canteen_id !== $user->canteen_id) {
+        if ($user && $user->canteen_id && $category->canteen_id && (int) $category->canteen_id !== (int) $user->canteen_id) {
             return response()->json(['message' => 'Unauthorized access to this entity category.'], 403);
         }
 
@@ -87,14 +106,23 @@ class AdminCategoryController extends Controller
         $category = Category::findOrFail($id);
 
         $user = $request->user();
-        if ($user && $user->canteen_id && $category->canteen_id && $category->canteen_id !== $user->canteen_id) {
+        if ($user && $user->canteen_id && $category->canteen_id && (int) $category->canteen_id !== (int) $user->canteen_id) {
             return response()->json(['message' => 'Unauthorized. This category belongs to another entity.'], 403);
         }
 
         $data = $request->validated();
 
         if (isset($data['name']) && empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']);
+            $baseSlug = Str::slug($data['name']);
+            $slug = $baseSlug;
+            $counter = 1;
+            while (Category::where('slug', $slug)->where('id', '!=', $category->id)->exists()) {
+                $slug = "{$baseSlug}-" . ($category->canteen_id ?? $counter);
+                if (Category::where('slug', $slug)->where('id', '!=', $category->id)->exists()) {
+                    $slug = "{$baseSlug}-" . ++$counter;
+                }
+            }
+            $data['slug'] = $slug;
         }
 
         $category->update($data);
