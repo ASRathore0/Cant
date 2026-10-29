@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             MadanSweetsSeeder::class,
             HiraSweetsSeeder::class,
             ChaiTadkaSeeder::class,
+            KrishnaDhabaSeeder::class,
         ]);
     }
 }

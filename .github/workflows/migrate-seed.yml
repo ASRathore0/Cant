@@ -1,0 +1,91 @@
+name: Migrate & Seed Hostinger Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Operation to perform'
+        required: true
+        default: 'migrate_and_seed'
+        type: choice
+        options:
+          - 'migrate_and_seed'
+          - 'migrate_only'
+          - 'seed_only'
+      seeder:
+        description: 'Seeder class to run (Uses safe updateOrCreate, never wipes existing data)'
+        required: true
+        default: 'DatabaseSeeder'
+        type: choice
+        options:
+          - 'DatabaseSeeder'
+          - 'KrishnaDhabaSeeder'
+          - 'ChaiTadkaSeeder'
+          - 'HiraSweetsSeeder'
+          - 'MadanSweetsSeeder'
+          - 'CanteenSeeder'
+          - 'AdminUserSeeder'
+
+jobs:
+  migrate-and-seed:
+    name: 🗄️ Migrate & Seed Remote Database
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⚡ Execute Safe Migration & Seeding via SSH
+        uses: appleboy/ssh-action@master
+        env:
+          ACTION: ${{ github.event.inputs.action || 'migrate_and_seed' }}
+          SEEDER_CLASS: ${{ github.event.inputs.seeder || 'DatabaseSeeder' }}
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT || 65002 }}
+          envs: ACTION,SEEDER_CLASS
+          script: |
+            TARGET="${{ secrets.HOSTINGER_REMOTE_PATH || 'public_html' }}"
+            cd "$TARGET/backend" || cd ~/public_html/backend || {
+              echo "❌ Error: Could not locate backend directory at '$TARGET/backend' or '~/public_html/backend'"
+              exit 1
+            }
+
+            if [ ! -f .env ]; then
+              echo "❌ Error: backend/.env not found on remote server. Please ensure database connection is configured."
+              exit 1
+            fi
+
+            echo "=================================================="
+            echo "🚀 HOSTINGER DATABASE OPERATION"
+            echo "Action: $ACTION"
+            echo "Seeder: $SEEDER_CLASS"
+            echo "Safety: ONLY new records will be added / updated."
+            echo "        Existing tables and records are NEVER wiped."
+            echo "=================================================="
+
+            mkdir -p storage/framework/views storage/framework/cache/data storage/framework/sessions storage/logs bootstrap/cache
+            chmod -R 775 storage bootstrap/cache
+
+            # Step 1: Run pending migrations
+            if [ "$ACTION" = "migrate_and_seed" ] || [ "$ACTION" = "migrate_only" ]; then
+              echo "➡️ [1/3] Running pending migrations (php artisan migrate --force)..."
+              php artisan migrate --force
+              echo "✅ Migrations completed successfully."
+            fi
+
+            # Step 2: Run safe seeding (updateOrCreate)
+            if [ "$ACTION" = "migrate_and_seed" ] || [ "$ACTION" = "seed_only" ]; then
+              echo "➡️ [2/3] Running safe database seeder: $SEEDER_CLASS..."
+              php artisan db:seed --class="$SEEDER_CLASS" --force
+              echo "✅ Seeder '$SEEDER_CLASS' finished. Existing data preserved, new records synced!"
+            fi
+
+            # Step 3: Refresh caches & storage link
+            echo "➡️ [3/3] Clearing optimization caches and ensuring storage link..."
+            php artisan storage:link || true
+            php artisan optimize:clear
+
+            echo "=================================================="
+            echo "🎉 ALL OPERATIONS COMPLETED SUCCESSFULLY!"
+            echo "=================================================="
+

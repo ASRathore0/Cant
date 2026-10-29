@@ -5,6 +5,23 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Also seed new database records (Safe updateOrCreate)'
+        required: false
+        type: boolean
+        default: false
+      seeder:
+        description: 'Seeder to run if seed is enabled'
+        required: false
+        default: 'DatabaseSeeder'
+        type: choice
+        options:
+          - 'DatabaseSeeder'
+          - 'KrishnaDhabaSeeder'
+          - 'ChaiTadkaSeeder'
+          - 'HiraSweetsSeeder'
+          - 'MadanSweetsSeeder'
 
 jobs:
   build-and-deploy:
@@ -87,11 +104,15 @@ jobs:
       - name: ⚡ Run Migrations & Cache Optimization
         uses: appleboy/ssh-action@master
         continue-on-error: true
+        env:
+          DO_SEED: ${{ github.event.inputs.seed || 'false' }}
+          SEEDER_CLASS: ${{ github.event.inputs.seeder || 'DatabaseSeeder' }}
         with:
           host: ${{ secrets.HOSTINGER_SSH_HOST }}
           username: ${{ secrets.HOSTINGER_SSH_USER }}
           password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
           port: ${{ secrets.HOSTINGER_SSH_PORT || 65002 }}
+          envs: DO_SEED,SEEDER_CLASS
           script: |
             TARGET="${{ secrets.HOSTINGER_REMOTE_PATH || 'public_html' }}"
             cd "$TARGET/backend" || cd ~/public_html/backend
@@ -99,6 +120,10 @@ jobs:
             chmod -R 775 storage bootstrap/cache
             if [ -f .env ]; then
               php artisan migrate --force
+              if [ "$DO_SEED" = "true" ]; then
+                echo "🌱 Seeding new records safely with $SEEDER_CLASS (updateOrCreate)..."
+                php artisan db:seed --class="$SEEDER_CLASS" --force
+              fi
               php artisan storage:link || true
               php artisan optimize:clear
               echo "✅ Auto-migration and cache clearance completed successfully!"
