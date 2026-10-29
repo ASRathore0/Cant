@@ -41,6 +41,13 @@ class Canteen extends Model
         'discount_badge_text',
         'qr_target_url',
         'is_active',
+        'billing_enabled',
+        'digital_ebill_enabled',
+        'whatsapp_billing_enabled',
+        'whatsapp_auto_send_enabled',
+        'whatsapp_api_phone_id',
+        'whatsapp_api_token',
+        'whatsapp_api_template',
         'is_default',
     ];
 
@@ -54,6 +61,10 @@ class Canteen extends Model
         'announcement_enabled' => 'boolean',
         'discount_badge_enabled' => 'boolean',
         'is_active' => 'boolean',
+        'billing_enabled' => 'boolean',
+        'digital_ebill_enabled' => 'boolean',
+        'whatsapp_billing_enabled' => 'boolean',
+        'whatsapp_auto_send_enabled' => 'boolean',
         'is_default' => 'boolean',
     ];
 
@@ -65,6 +76,11 @@ class Canteen extends Model
     public function menuItems(): HasMany
     {
         return $this->hasMany(MenuItem::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     public function managers(): HasMany
@@ -144,6 +160,13 @@ class Canteen extends Model
             'army_discount_text' => $this->discount_badge_text ?? '10% Discount for Indian Armed Forces personnel & veterans with valid ID.',
             'discount_badge_text' => $this->discount_badge_text ?? '10% Discount for Indian Armed Forces personnel & veterans with valid ID.',
             'qr_target_url' => $this->qr_target_url ?? url("/menu?canteen={$this->slug}"),
+            'billing_enabled' => (bool) ($this->billing_enabled ?? true),
+            'digital_ebill_enabled' => (bool) ($this->digital_ebill_enabled ?? true),
+            'whatsapp_billing_enabled' => (bool) ($this->whatsapp_billing_enabled ?? true),
+            'whatsapp_auto_send_enabled' => (bool) ($this->whatsapp_auto_send_enabled ?? false),
+            'whatsapp_api_phone_id' => $this->whatsapp_api_phone_id ?? '',
+            'whatsapp_api_token' => $this->whatsapp_api_token ?? '',
+            'whatsapp_api_template' => $this->whatsapp_api_template ?? '',
             'is_active' => (bool) $this->is_active,
             'is_default' => (bool) $this->is_default,
         ];

@@ -80,6 +80,7 @@ class AuthController extends Controller
                     'secondary_color' => $canteen->secondary_color,
                     'accent_color' => $canteen->accent_color,
                     'bg_color' => $canteen->bg_color,
+                    'billing_enabled' => (bool) ($canteen->billing_enabled ?? true),
                 ] : null,
             ],
         ]);
@@ -121,6 +122,7 @@ class AuthController extends Controller
                     'secondary_color' => $canteen->secondary_color,
                     'accent_color' => $canteen->accent_color,
                     'bg_color' => $canteen->bg_color,
+                    'billing_enabled' => (bool) ($canteen->billing_enabled ?? true),
                 ] : null,
             ],
         ]);

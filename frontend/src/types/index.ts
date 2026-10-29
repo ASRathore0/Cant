@@ -66,6 +66,13 @@ export interface Canteen {
   discount_badge_text: string | null;
   qr_target_url: string | null;
   is_active: boolean;
+  billing_enabled?: boolean;
+  digital_ebill_enabled?: boolean;
+  whatsapp_billing_enabled?: boolean;
+  whatsapp_auto_send_enabled?: boolean;
+  whatsapp_api_phone_id?: string | null;
+  whatsapp_api_token?: string | null;
+  whatsapp_api_template?: string | null;
   is_default: boolean;
   managers?: Array<{ id: number; name: string; email: string; role: string; created_at?: string }>;
   categories_count?: number;
@@ -148,3 +155,86 @@ export interface DashboardMetrics {
   total_scans: number;
   today_scans: number;
 }
+
+export interface OrderItem {
+  id?: number;
+  order_id?: number;
+  menu_item_id?: number | null;
+  item_name: string;
+  variant?: string | null;
+  unit_price: number;
+  quantity: number;
+  total_price: number;
+  notes?: string | null;
+  formatted_unit_price?: string;
+  formatted_total_price?: string;
+}
+
+export interface Order {
+  id: number;
+  canteen_id: number;
+  order_number: string;
+  token_number?: string | null;
+  order_type: 'dine_in' | 'takeaway' | 'delivery';
+  table_number?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  payment_status: 'unpaid' | 'paid' | 'partially_paid';
+  payment_method: 'cash' | 'upi' | 'card' | 'online' | 'unspecified';
+  subtotal: number;
+  discount: number;
+  tax: number;
+  total_amount: number;
+  notes?: string | null;
+  billed_by?: string | null;
+  source: 'qr_customer' | 'counter_pos';
+  settled_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  formatted_total?: string;
+  formatted_subtotal?: string;
+  status_label?: string;
+  items: OrderItem[];
+  canteen?: Canteen;
+}
+
+export interface CartItem {
+  id: string; // unique composite key: e.g. "item-12-half"
+  menu_item_id: number;
+  name: string;
+  variant?: string;
+  unit_price: number;
+  quantity: number;
+  image_url?: string | null;
+}
+
+export interface CreateOrderPayload {
+  canteen_id?: number;
+  canteen_slug?: string;
+  order_type: 'dine_in' | 'takeaway' | 'delivery';
+  table_number?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  payment_method?: string;
+  payment_status?: string;
+  discount?: number;
+  tax?: number;
+  notes?: string;
+  items: {
+    menu_item_id?: number | null;
+    name: string;
+    variant?: string | null;
+    unit_price: number;
+    quantity: number;
+    notes?: string | null;
+  }[];
+}
+
+export interface OrderStats {
+  total_today: number;
+  pending_count: number;
+  active_kitchen: number;
+  today_sales: number;
+}
+

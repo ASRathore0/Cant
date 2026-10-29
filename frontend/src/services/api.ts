@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Category, MenuItem, RestaurantSettings, User, DashboardMetrics, Canteen } from '../types';
+import { Category, MenuItem, RestaurantSettings, User, DashboardMetrics, Canteen, Order, CreateOrderPayload, OrderStats } from '../types';
 
 const getBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
@@ -87,6 +87,23 @@ export const publicApi = {
   recordScan: async (source: string = 'qr_code') => {
     const res = await apiClient.post('/qr-scans', { source });
     return res.data;
+  },
+
+  placeOrder: async (data: CreateOrderPayload) => {
+    const res = await apiClient.post<{
+      success: boolean;
+      message: string;
+      data: Order;
+    }>('/orders', data);
+    return res.data;
+  },
+
+  getOrder: async (orderNumber: string) => {
+    const res = await apiClient.get<{
+      success: boolean;
+      data: Order;
+    }>(`/orders/${orderNumber}`);
+    return res.data.data;
   },
 };
 
@@ -339,6 +356,80 @@ export const adminApi = {
       user: User;
       canteen: Canteen;
     }>(`/admin/users/${userId}/emulate`);
+    return res.data;
+  },
+};
+
+/*
+|--------------------------------------------------------------------------
+| Orders & POS Billing API Methods
+|--------------------------------------------------------------------------
+*/
+export const ordersApi = {
+  getOrders: async (params?: Record<string, any>) => {
+    const res = await apiClient.get<{
+      success: boolean;
+      data: {
+        data: Order[];
+        current_page: number;
+        last_page: number;
+        total: number;
+      };
+      stats: OrderStats;
+    }>('/admin/orders', { params });
+    return res.data;
+  },
+
+  createPosOrder: async (data: CreateOrderPayload) => {
+    const res = await apiClient.post<{
+      success: boolean;
+      message: string;
+      data: Order;
+    }>('/admin/orders', data);
+    return res.data;
+  },
+
+  getOrder: async (id: number) => {
+    const res = await apiClient.get<{
+      success: boolean;
+      data: Order;
+    }>(`/admin/orders/${id}`);
+    return res.data.data;
+  },
+
+  updateOrderStatus: async (id: number, data: { status?: string; payment_status?: string; payment_method?: string }) => {
+    const res = await apiClient.patch<{
+      success: boolean;
+      message: string;
+      data: Order;
+    }>(`/admin/orders/${id}/status`, data);
+    return res.data;
+  },
+
+  getOrderReceipt: async (id: number) => {
+    const res = await apiClient.get<{
+      success: boolean;
+      receipt: any;
+    }>(`/admin/orders/${id}/receipt`);
+    return res.data.receipt;
+  },
+
+  sendOrderWhatsApp: async (id: number, customerPhone?: string) => {
+    const res = await apiClient.post<{
+      success: boolean;
+      message: string;
+      wa_me_url?: string;
+      receipt_url?: string;
+      cloud_api_result?: any;
+    }>(`/admin/orders/${id}/whatsapp`, { customer_phone: customerPhone });
+    return res.data;
+  },
+
+  deleteOrder: async (id: number) => {
+    const res = await apiClient.delete<{
+      success: boolean;
+      message: string;
+    }>(`/admin/orders/${id}`);
     return res.data;
   },
 };

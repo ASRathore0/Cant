@@ -4,9 +4,11 @@ use App\Http\Controllers\Api\AdminCategoryController;
 use App\Http\Controllers\Api\AdminCanteenController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminMenuItemController;
+use App\Http\Controllers\Api\AdminOrderController;
 use App\Http\Controllers\Api\AdminSettingController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PublicMenuController;
+use App\Http\Controllers\Api\PublicOrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,6 +22,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/restaurant', [PublicMenuController::class, 'restaurant']);
     Route::get('/canteens', [PublicMenuController::class, 'canteens']);
     Route::post('/qr-scans', [PublicMenuController::class, 'recordScan']);
+
+    // Customer QR Ordering Routes
+    Route::post('/orders', [PublicOrderController::class, 'store']);
+    Route::get('/orders/{orderNumber}', [PublicOrderController::class, 'show']);
 
     // Admin Authentication (Public login)
     Route::post('/admin/login', [AuthController::class, 'login']);
@@ -71,5 +77,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings', [AdminSettingController::class, 'index']);
         Route::post('/settings', [AdminSettingController::class, 'update']);
         Route::put('/settings', [AdminSettingController::class, 'update']);
+
+        // Orders & POS Billing Management
+        Route::get('/orders', [AdminOrderController::class, 'index']);
+        Route::post('/orders', [AdminOrderController::class, 'store']);
+        Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
+        Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::get('/orders/{id}/receipt', [AdminOrderController::class, 'receipt']);
+        Route::post('/orders/{id}/whatsapp', [AdminOrderController::class, 'sendWhatsApp']);
+        Route::delete('/orders/{id}', [AdminOrderController::class, 'destroy']);
     });
 });

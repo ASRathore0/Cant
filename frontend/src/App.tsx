@@ -7,6 +7,8 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminMenuPage } from './pages/AdminMenuPage';
 import { AdminCategoriesPage } from './pages/AdminCategoriesPage';
 import { AdminSettingsPage } from './pages/AdminSettingsPage';
+import { AdminPosPage } from './pages/AdminPosPage';
+import { DigitalReceiptPage } from './pages/DigitalReceiptPage';
 import { SuperAdminPage } from './pages/SuperAdminPage';
 
 // Protected Route Guard
@@ -43,6 +45,7 @@ export const App: React.FC = () => {
         <Route path="/" element={<Navigate to="/menu" replace />} />
         <Route path="/menu" element={<PublicMenuPage />} />
         <Route path="/c/:slug" element={<PublicMenuPage />} />
+        <Route path="/receipt/:orderNumber" element={<DigitalReceiptPage />} />
 
         {/* Admin Authentication */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -71,6 +74,14 @@ export const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/pos"
+          element={
+            <ProtectedRoute>
+              <AdminPosPage />
             </ProtectedRoute>
           }
         />

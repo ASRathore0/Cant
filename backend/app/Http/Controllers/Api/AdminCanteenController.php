@@ -85,6 +85,13 @@ class AdminCanteenController extends Controller
             'discount_badge_title' => ['nullable', 'string', 'max:100'],
             'discount_badge_text' => ['nullable', 'string', 'max:500'],
             'qr_target_url' => ['nullable', 'string', 'max:500'],
+            'billing_enabled' => ['nullable'],
+            'digital_ebill_enabled' => ['nullable'],
+            'whatsapp_billing_enabled' => ['nullable'],
+            'whatsapp_auto_send_enabled' => ['nullable'],
+            'whatsapp_api_phone_id' => ['nullable', 'string', 'max:100'],
+            'whatsapp_api_token' => ['nullable', 'string', 'max:500'],
+            'whatsapp_api_template' => ['nullable', 'string', 'max:100'],
             'is_default' => ['nullable', 'boolean'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
             'favicon' => ['nullable', 'file', 'mimes:ico,png,svg,jpg,jpeg,webp', 'max:2048'],
@@ -128,6 +135,18 @@ class AdminCanteenController extends Controller
         $validated['dietary_type'] = $validated['dietary_type'] ?? 'pure_veg';
         $validated['pure_veg_label'] = $validated['pure_veg_label'] ?? '100% Pure Vegetarian';
         $validated['is_active'] = true;
+        $validated['billing_enabled'] = $request->has('billing_enabled')
+            ? filter_var($request->input('billing_enabled'), FILTER_VALIDATE_BOOLEAN)
+            : true;
+        $validated['digital_ebill_enabled'] = $request->has('digital_ebill_enabled')
+            ? filter_var($request->input('digital_ebill_enabled'), FILTER_VALIDATE_BOOLEAN)
+            : true;
+        $validated['whatsapp_billing_enabled'] = $request->has('whatsapp_billing_enabled')
+            ? filter_var($request->input('whatsapp_billing_enabled'), FILTER_VALIDATE_BOOLEAN)
+            : true;
+        $validated['whatsapp_auto_send_enabled'] = $request->has('whatsapp_auto_send_enabled')
+            ? filter_var($request->input('whatsapp_auto_send_enabled'), FILTER_VALIDATE_BOOLEAN)
+            : false;
 
         if (array_key_exists('hero_trio', $validated)) {
             if (is_string($validated['hero_trio'])) {
@@ -263,6 +282,13 @@ class AdminCanteenController extends Controller
             'discount_badge_text' => ['nullable', 'string', 'max:500'],
             'qr_target_url' => ['nullable', 'string', 'max:500'],
             'is_active' => ['nullable'],
+            'billing_enabled' => ['nullable'],
+            'digital_ebill_enabled' => ['nullable'],
+            'whatsapp_billing_enabled' => ['nullable'],
+            'whatsapp_auto_send_enabled' => ['nullable'],
+            'whatsapp_api_phone_id' => ['nullable', 'string', 'max:100'],
+            'whatsapp_api_token' => ['nullable', 'string', 'max:500'],
+            'whatsapp_api_template' => ['nullable', 'string', 'max:100'],
             'is_default' => ['nullable'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
             'favicon' => ['nullable', 'file', 'mimes:ico,png,svg,jpg,jpeg,webp', 'max:2048'],
@@ -298,6 +324,18 @@ class AdminCanteenController extends Controller
         }
         if (isset($validated['is_active'])) {
             $validated['is_active'] = filter_var($validated['is_active'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($validated['billing_enabled'])) {
+            $validated['billing_enabled'] = filter_var($validated['billing_enabled'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($validated['digital_ebill_enabled'])) {
+            $validated['digital_ebill_enabled'] = filter_var($validated['digital_ebill_enabled'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($validated['whatsapp_billing_enabled'])) {
+            $validated['whatsapp_billing_enabled'] = filter_var($validated['whatsapp_billing_enabled'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($validated['whatsapp_auto_send_enabled'])) {
+            $validated['whatsapp_auto_send_enabled'] = filter_var($validated['whatsapp_auto_send_enabled'], FILTER_VALIDATE_BOOLEAN);
         }
         if (!empty($validated['is_default'])) {
             $isDefault = filter_var($validated['is_default'], FILTER_VALIDATE_BOOLEAN);

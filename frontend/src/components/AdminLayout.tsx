@@ -15,6 +15,7 @@ import {
   Building2,
   Palette,
   ShieldCheck,
+  Receipt,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -71,8 +72,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
     }
   }, [user, title]);
 
+  const isBillingEnabled = isSuperAdminUser || ((user?.canteen as any)?.billing_enabled !== false);
+
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+    ...(isBillingEnabled ? [
+      { name: 'POS & Billing', path: '/admin/pos', icon: Receipt },
+    ] : []),
     { name: 'Menu Items', path: '/admin/menu', icon: UtensilsCrossed },
     { name: 'Categories', path: '/admin/categories', icon: FolderTree },
     ...(isSuperAdminUser ? [

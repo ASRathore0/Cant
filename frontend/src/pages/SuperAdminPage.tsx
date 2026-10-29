@@ -33,6 +33,7 @@ import {
   FileText,
   UtensilsCrossed,
   Users,
+  Receipt,
   Key,
   Lock,
   User as UserIcon,
@@ -170,6 +171,13 @@ export const SuperAdminPage: React.FC = () => {
     accent_color: '#E8C928',
     bg_color: '#FAF8F1',
     theme_preset: 'emerald_heritage',
+    billing_enabled: true,
+    digital_ebill_enabled: true,
+    whatsapp_billing_enabled: true,
+    whatsapp_auto_send_enabled: false,
+    whatsapp_api_phone_id: '',
+    whatsapp_api_token: '',
+    whatsapp_api_template: '',
     clone_from_default: true,
   });
   const [newLogoFile, setNewLogoFile] = useState<File | null>(null);
@@ -424,6 +432,66 @@ export const SuperAdminPage: React.FC = () => {
     }
   };
 
+  const handleToggleBilling = async (canteen: Canteen, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextState = canteen.billing_enabled === false ? true : false;
+    try {
+      const formData = new FormData();
+      formData.append('billing_enabled', nextState ? '1' : '0');
+      const res = await adminApi.updateCanteen(canteen.id, formData);
+      addToast(
+        'success',
+        `Billing & POS feature ${nextState ? 'ACTIVATED' : 'DEACTIVATED'} for "${canteen.name}"!`
+      );
+      const updatedList = await adminApi.getCanteens();
+      setCanteens(updatedList);
+      if (selectedCanteen?.id === canteen.id) {
+        const fresh = updatedList.find((c) => c.id === canteen.id);
+        if (fresh) {
+          setSelectedCanteen(fresh);
+          populateEditForm(fresh);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to toggle billing:', err);
+      addToast('error', 'Failed to update billing feature status.');
+    }
+  };
+
+  const handleToggleFeature = async (
+    canteen: Canteen,
+    feature: 'billing_enabled' | 'digital_ebill_enabled' | 'whatsapp_billing_enabled' | 'whatsapp_auto_send_enabled',
+    label: string,
+    e?: React.MouseEvent
+  ) => {
+    if (e) e.stopPropagation();
+    const currentState = feature === 'whatsapp_auto_send_enabled'
+      ? (canteen as any)[feature] === true
+      : (canteen as any)[feature] !== false;
+    const nextState = !currentState;
+    try {
+      const formData = new FormData();
+      formData.append(feature, nextState ? '1' : '0');
+      await adminApi.updateCanteen(canteen.id, formData);
+      addToast(
+        'success',
+        `${label} ${nextState ? 'ACTIVATED' : 'DEACTIVATED'} for "${canteen.name}"!`
+      );
+      const updatedList = await adminApi.getCanteens();
+      setCanteens(updatedList);
+      if (selectedCanteen?.id === canteen.id) {
+        const fresh = updatedList.find((c) => c.id === canteen.id);
+        if (fresh) {
+          setSelectedCanteen(fresh);
+          populateEditForm(fresh);
+        }
+      }
+    } catch (err: any) {
+      console.error(`Failed to toggle ${feature}:`, err);
+      addToast('error', `Failed to update ${label.toLowerCase()} status.`);
+    }
+  };
+
   const handleSaveStudioChanges = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCanteen) return;
@@ -495,7 +563,9 @@ export const SuperAdminPage: React.FC = () => {
       const formData = new FormData();
       Object.entries(newCanteenForm).forEach(([key, val]) => {
         if (key === 'clone_from_default') return;
-        if (key === 'hero_trio' || typeof val === 'object') {
+        if (typeof val === 'boolean') {
+          formData.append(key, val ? '1' : '0');
+        } else if (key === 'hero_trio' || typeof val === 'object') {
           formData.append(key, JSON.stringify(val));
         } else {
           formData.append(key, String(val));
@@ -553,6 +623,13 @@ export const SuperAdminPage: React.FC = () => {
         accent_color: '#E8C928',
         bg_color: '#FAF8F1',
         theme_preset: 'emerald_heritage',
+        billing_enabled: true,
+        digital_ebill_enabled: true,
+        whatsapp_billing_enabled: true,
+        whatsapp_auto_send_enabled: false,
+        whatsapp_api_phone_id: '',
+        whatsapp_api_token: '',
+        whatsapp_api_template: '',
         clone_from_default: true,
       });
       setNewLogoFile(null);
@@ -883,6 +960,78 @@ export const SuperAdminPage: React.FC = () => {
                           <div className="w-4 h-4 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: canteen.secondary_color }} title="Secondary" />
                           <div className="w-4 h-4 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: canteen.accent_color }} title="Accent" />
                           <div className="w-4 h-4 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: canteen.bg_color }} title="Background" />
+                        </div>
+                      </div>
+
+                      {/* Billing & POS Feature Toggle Pill */}
+                      <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                        <span className="text-stone-500 font-medium flex items-center gap-1">
+                          <Receipt className="w-3 h-3 text-stone-400" />
+                          POS & Billing:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleBilling(canteen, e)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                            canteen.billing_enabled !== false
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 shadow-2xs'
+                              : 'bg-stone-100 text-stone-500 border-stone-300 hover:bg-stone-200'
+                          }`}
+                          title="Click to enable or disable billing & ordering features for this restaurant"
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${canteen.billing_enabled !== false ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'}`} />
+                          <span>{canteen.billing_enabled !== false ? 'Active' : 'Off'}</span>
+                        </button>
+                      </div>
+
+                      {/* WhatsApp & Digital E-Bill Options Pill */}
+                      <div className="mt-1.5 pt-1.5 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                        <span className="text-stone-500 font-medium flex items-center gap-1">
+                          <MessageCircle className="w-3 h-3 text-emerald-600" />
+                          WhatsApp & E-Bill:
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {/* Option 1: Digital E-Bill */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleFeature(canteen, 'digital_ebill_enabled', 'Digital E-Bill', e)}
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                              canteen.digital_ebill_enabled !== false
+                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                : 'bg-stone-100 text-stone-400 border-stone-200 hover:bg-stone-200'
+                            }`}
+                            title="Option 1: Digital E-Bill Webpage (/receipt/:orderNumber)"
+                          >
+                            E-Bill
+                          </button>
+
+                          {/* Option 2: 1-Click WhatsApp Direct */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleFeature(canteen, 'whatsapp_billing_enabled', 'WhatsApp 1-Click Bill', e)}
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                              canteen.whatsapp_billing_enabled !== false
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-stone-100 text-stone-400 border-stone-200 hover:bg-stone-200'
+                            }`}
+                            title="Option 2: 1-Click WhatsApp Direct Bill (wa.me)"
+                          >
+                            wa.me
+                          </button>
+
+                          {/* Option 3: Auto WhatsApp Cloud API */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleFeature(canteen, 'whatsapp_auto_send_enabled', 'Auto WhatsApp API', e)}
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                              canteen.whatsapp_auto_send_enabled
+                                ? 'bg-teal-700 text-white border-teal-800 shadow-2xs animate-pulse'
+                                : 'bg-stone-100 text-stone-400 border-stone-200 hover:bg-stone-200'
+                            }`}
+                            title="Option 3: Automated WhatsApp Cloud API Dispatch"
+                          >
+                            Auto API
+                          </button>
                         </div>
                       </div>
 
@@ -2495,6 +2644,188 @@ export const SuperAdminPage: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                {/* Billing, Digital E-Bill & WhatsApp Options Multi-Switch Center */}
+                <div className="border-t border-stone-200 pt-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                        <Receipt className="w-4 h-4 text-[#075C35]" />
+                        <span>Billing, Receipts & WhatsApp Integrations</span>
+                      </h4>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Configure POS billing and choose between 3 WhatsApp & digital receipt modes per restaurant demand.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Main POS Switch */}
+                  <div className="flex items-center justify-between p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-800 flex items-center justify-center shrink-0">
+                        <Receipt className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <label htmlFor="edit_billing_enabled" className="text-xs font-bold text-stone-900 cursor-pointer block leading-tight">
+                          Counter POS Terminal & Billing Module
+                        </label>
+                        <span className="text-[11px] text-stone-600 block mt-0.5">
+                          Enables Counter POS terminal at <code className="text-stone-700 bg-stone-100 px-1 py-0.5 rounded font-mono">/admin/pos</code>, thermal receipt printing, KOT tickets, and live ordering.
+                        </span>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      id="edit_billing_enabled"
+                      checked={editForm.billing_enabled !== false}
+                      onChange={(e) => setEditForm({ ...editForm, billing_enabled: e.target.checked })}
+                      className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer shrink-0"
+                    />
+                  </div>
+
+                  {/* The 3 WhatsApp & Receipt Options */}
+                  <div className="grid grid-cols-1 gap-3.5 pl-2 sm:pl-4 border-l-2 border-emerald-500/30">
+                    {/* Option 1: Digital E-Bill Webpage */}
+                    <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 hover:border-emerald-200 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200 mt-0.5">
+                            <Globe className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="edit_digital_ebill" className="text-xs font-bold text-stone-900 cursor-pointer">
+                                Option 1: Public Digital E-Bill Webpage
+                              </label>
+                              <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">
+                                /receipt/:orderNumber
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+                              Provides customer mobile e-bill page with live order status, itemized invoice, and print/PDF download button.
+                            </p>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          id="edit_digital_ebill"
+                          checked={editForm.digital_ebill_enabled !== false}
+                          onChange={(e) => setEditForm({ ...editForm, digital_ebill_enabled: e.target.checked })}
+                          className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer shrink-0 mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Option 2: 1-Click WhatsApp Direct Bill */}
+                    <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 hover:border-emerald-200 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
+                            <MessageCircle className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="edit_whatsapp_billing" className="text-xs font-bold text-stone-900 cursor-pointer">
+                                Option 2: 1-Click WhatsApp Direct Bill
+                              </label>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold">
+                                100% Free (wa.me)
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+                              Enables one-tap WhatsApp button on Cashier POS and Thermal Print preview modal. Generates pre-formatted bill text with token, items, and e-bill link with zero API costs.
+                            </p>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          id="edit_whatsapp_billing"
+                          checked={editForm.whatsapp_billing_enabled !== false}
+                          onChange={(e) => setEditForm({ ...editForm, whatsapp_billing_enabled: e.target.checked })}
+                          className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer shrink-0 mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Option 3: Automated WhatsApp Cloud API */}
+                    <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 hover:border-emerald-200 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0 border border-teal-200 mt-0.5">
+                            <ShieldCheck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="edit_whatsapp_auto_send" className="text-xs font-bold text-stone-900 cursor-pointer">
+                                Option 3: Automated WhatsApp Cloud API Gateway
+                              </label>
+                              <span className="text-[10px] bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-semibold">
+                                Background Auto-Dispatch
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+                              Automatically dispatches official WhatsApp bill receipt to customer's mobile number in background upon checkout/settlement using Meta WhatsApp Cloud API credentials.
+                            </p>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          id="edit_whatsapp_auto_send"
+                          checked={Boolean(editForm.whatsapp_auto_send_enabled)}
+                          onChange={(e) => setEditForm({ ...editForm, whatsapp_auto_send_enabled: e.target.checked })}
+                          className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer shrink-0 mt-1"
+                        />
+                      </div>
+
+                      {/* Expandable Meta Cloud API Inputs */}
+                      {editForm.whatsapp_auto_send_enabled && (
+                        <div className="mt-3 pt-3 border-t border-stone-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-teal-100">
+                          <div>
+                            <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                              WhatsApp Phone Number ID
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.whatsapp_api_phone_id || ''}
+                              onChange={(e) => setEditForm({ ...editForm, whatsapp_api_phone_id: e.target.value })}
+                              placeholder="e.g. 104829104829104"
+                              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-mono focus:ring-1 focus:ring-teal-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                              WhatsApp Message Template (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.whatsapp_api_template || ''}
+                              onChange={(e) => setEditForm({ ...editForm, whatsapp_api_template: e.target.value })}
+                              placeholder="e.g. bill_receipt_v1 (or leave blank for text)"
+                              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 text-xs focus:ring-1 focus:ring-teal-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                              Meta System User Permanent Token
+                            </label>
+                            <input
+                              type="password"
+                              value={editForm.whatsapp_api_token || ''}
+                              onChange={(e) => setEditForm({ ...editForm, whatsapp_api_token: e.target.value })}
+                              placeholder="EAABw..."
+                              className="w-full px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-mono focus:ring-1 focus:ring-teal-600 focus:outline-none"
+                            />
+                            <p className="text-[10px] text-stone-400 mt-1">
+                              Kept securely on backend for sending automated WhatsApp receipts for this restaurant.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Save Button */}
@@ -3033,6 +3364,69 @@ export const SuperAdminPage: React.FC = () => {
                   <p className="text-[11px] text-emerald-800 mt-0.5">
                     Automatically copies all 5 categories and 29 dishes so the new canteen starts with a fully populated menu catalog ready for editing.
                   </p>
+                </div>
+              </div>
+
+              {/* Billing System Option */}
+              <div className="p-3 bg-amber-50/70 rounded-2xl border border-amber-200 flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="onboard_billing"
+                  checked={newCanteenForm.billing_enabled}
+                  onChange={(e) => setNewCanteenForm({ ...newCanteenForm, billing_enabled: e.target.checked })}
+                  className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                />
+                <div>
+                  <label htmlFor="onboard_billing" className="text-xs font-bold text-stone-900 cursor-pointer flex items-center gap-1.5">
+                    <Receipt className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Enable POS Billing & Counter Terminal</span>
+                  </label>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    Allows the manager to use the Counter POS terminal, print thermal receipts/KOT, and accept mobile customer orders.
+                  </p>
+                </div>
+              </div>
+
+              {/* 3 WhatsApp & Receipt Options on Onboarding */}
+              <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2.5">
+                <span className="text-xs font-bold text-stone-900 block flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Customer WhatsApp & E-Bill Options (Configurable on Demand)</span>
+                </span>
+
+                <div className="space-y-2 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCanteenForm.digital_ebill_enabled}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, digital_ebill_enabled: e.target.checked })}
+                      className="w-4 h-4 text-emerald-600 rounded"
+                    />
+                    <span className="font-semibold text-stone-800">1. Digital E-Bill Webpage</span>
+                    <span className="text-[10px] text-stone-500">(/receipt/:orderNumber)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCanteenForm.whatsapp_billing_enabled}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, whatsapp_billing_enabled: e.target.checked })}
+                      className="w-4 h-4 text-emerald-600 rounded"
+                    />
+                    <span className="font-semibold text-stone-800">2. Free 1-Click WhatsApp Direct Bill</span>
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-bold">100% Free wa.me</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCanteenForm.whatsapp_auto_send_enabled}
+                      onChange={(e) => setNewCanteenForm({ ...newCanteenForm, whatsapp_auto_send_enabled: e.target.checked })}
+                      className="w-4 h-4 text-teal-600 rounded"
+                    />
+                    <span className="font-semibold text-stone-800">3. Automated WhatsApp Cloud API Gateway</span>
+                    <span className="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200 font-bold">Auto Background</span>
+                  </label>
                 </div>
               </div>
 

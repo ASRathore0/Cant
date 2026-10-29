@@ -8,9 +8,11 @@ import { CategoryChips } from '../components/CategoryChips';
 import { MenuCard } from '../components/MenuCard';
 import { DishDetailModal } from '../components/DishDetailModal';
 import { FloatingMenuSheet } from '../components/FloatingMenuSheet';
+import { CustomerCartSheet } from '../components/CustomerCartSheet';
 import { Footer } from '../components/Footer';
 import { publicApi } from '../services/api';
-import { Category, MenuItem, RestaurantSettings } from '../types';
+import { Category, MenuItem, RestaurantSettings, CartItem } from '../types';
+import { ShoppingBag } from 'lucide-react';
 
 const formatSlugToTitle = (rawSlug?: string | null): string => {
   if (!rawSlug) return '';
@@ -74,6 +76,87 @@ export const PublicMenuPage: React.FC = () => {
   // Modals
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isMenuSheetOpen, setIsMenuSheetOpen] = useState(false);
+
+  // Cart & Ordering State
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const activeParam = slug || new URLSearchParams(window.location.search).get('canteen') || 'default';
+      const saved = sessionStorage.getItem(`cart_${activeParam}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [portionPickerItem, setPortionPickerItem] = useState<MenuItem | null>(null);
+
+  useEffect(() => {
+    try {
+      const activeParam = slug || new URLSearchParams(window.location.search).get('canteen') || 'default';
+      sessionStorage.setItem(`cart_${activeParam}`, JSON.stringify(cartItems));
+    } catch (e) {}
+  }, [cartItems, slug, canteenParam]);
+
+  const handleAddToCart = (item: MenuItem, variant?: string, price?: number) => {
+    // If dish has price range and no variant is chosen yet, open quick portion selector
+    if (!variant && item.price_type === 'range' && item.price_max && item.price_max > item.price) {
+      setPortionPickerItem(item);
+      return;
+    }
+
+    const finalPrice = price ?? item.price;
+    const cartId = `${item.id}-${variant || 'standard'}`;
+
+    setCartItems((prev) => {
+      const existing = prev.find((it) => it.id === cartId);
+      if (existing) {
+        return prev.map((it) => (it.id === cartId ? { ...it, quantity: it.quantity + 1 } : it));
+      }
+      return [
+        ...prev,
+        {
+          id: cartId,
+          menu_item_id: item.id,
+          name: item.name,
+          variant,
+          unit_price: finalPrice,
+          quantity: 1,
+          image_url: item.image_url,
+        },
+      ];
+    });
+    setPortionPickerItem(null);
+  };
+
+  const handleUpdateCartQty = (cartId: string, delta: number) => {
+    setCartItems((prev) =>
+      prev
+        .map((it) => {
+          if (it.id === cartId) {
+            const next = it.quantity + delta;
+            return next > 0 ? { ...it, quantity: next } : null;
+          }
+          return it;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  };
+
+  const handleRemoveCartItem = (cartId: string) => {
+    setCartItems((prev) => prev.filter((it) => it.id !== cartId));
+  };
+
+  const handleClearCart = () => {
+    setCartItems([]);
+  };
+
+  const getDishCartQty = (itemId: number): number => {
+    return cartItems
+      .filter((it) => it.menu_item_id === itemId)
+      .reduce((sum, it) => sum + it.quantity, 0);
+  };
+
+  const isBillingActive = settings?.billing_enabled !== false;
 
   const fetchMenu = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) {
@@ -543,6 +626,8 @@ export const PublicMenuPage: React.FC = () => {
                   key={item.id}
                   item={item}
                   onSelect={(dish) => setSelectedDish(dish)}
+                  onAddToCart={isBillingActive ? ((dish) => handleAddToCart(dish)) : undefined}
+                  cartQty={isBillingActive ? getDishCartQty(item.id) : 0}
                   primaryColor={primaryColor}
                   secondaryColor={secondaryColor}
                   accentColor={accentColor}
@@ -671,6 +756,8 @@ export const PublicMenuPage: React.FC = () => {
                       key={item.id}
                       item={item}
                       onSelect={(dish) => setSelectedDish(dish)}
+                      onAddToCart={isBillingActive ? ((dish) => handleAddToCart(dish)) : undefined}
+                      cartQty={isBillingActive ? getDishCartQty(item.id) : 0}
                       primaryColor={primaryColor}
                       secondaryColor={secondaryColor}
                       accentColor={accentColor}
@@ -735,6 +822,111 @@ export const PublicMenuPage: React.FC = () => {
         item={selectedDish}
         onClose={() => setSelectedDish(null)}
         settings={settings}
+        onAddToCart={isBillingActive ? ((dish, variant, price) => handleAddToCart(dish, variant, price)) : undefined}
+      />
+
+      {/* Floating Portion Picker Modal (for dishes with Half / Full) */}
+      {portionPickerItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl space-y-4 border border-stone-200 animate-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 uppercase">
+                  Select Portion
+                </span>
+                <h3 className="font-serif font-black text-lg text-stone-900 mt-1 leading-snug">
+                  {portionPickerItem.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPortionPickerItem(null)}
+                className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleAddToCart(portionPickerItem, 'Half', portionPickerItem.price)}
+                className="p-3.5 rounded-2xl border-2 border-stone-200 hover:border-emerald-600 bg-stone-50 hover:bg-emerald-50/50 text-left transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="block text-xs font-bold text-stone-600">Half Plate</span>
+                <span className="block text-base font-black mt-1" style={{ color: secondaryColor }}>
+                  ₹{portionPickerItem.price}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAddToCart(portionPickerItem, 'Full', portionPickerItem.price_max!)}
+                className="p-3.5 rounded-2xl border-2 border-stone-200 hover:border-emerald-600 bg-stone-50 hover:bg-emerald-50/50 text-left transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="block text-xs font-bold text-stone-600">Full Plate</span>
+                <span className="block text-base font-black mt-1" style={{ color: secondaryColor }}>
+                  ₹{portionPickerItem.price_max}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bottom Cart Bar */}
+      {isBillingActive && cartItems.length > 0 && (
+        <div className="fixed bottom-4 inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-40 animate-in slide-in-from-bottom-4 duration-300">
+          <div
+            onClick={() => setIsCartOpen(true)}
+            className="p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-2xl flex items-center justify-between gap-3 text-white cursor-pointer active:scale-[0.99] hover:brightness-105 transition-all border border-white/20"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs"
+                style={{ backgroundColor: `${accentColor}30`, color: accentColor }}
+              >
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-extrabold text-xs sm:text-sm leading-tight flex items-center gap-1.5">
+                  <span>{cartItems.reduce((acc, it) => acc + it.quantity, 0)} Items Added</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                </p>
+                <p className="text-[11px] text-stone-200 font-medium">
+                  Total: ₹{cartItems.reduce((acc, it) => acc + it.unit_price * it.quantity, 0).toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className="px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1 shadow-sm"
+                style={{ backgroundColor: accentColor, color: primaryColor }}
+              >
+                <span>View Cart</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Cart Sheet Drawer */}
+      <CustomerCartSheet
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cartItems={cartItems}
+        onUpdateQty={handleUpdateCartQty}
+        onRemoveItem={handleRemoveCartItem}
+        onClearCart={handleClearCart}
+        canteenId={settings?.canteen_id}
+        canteenSlug={canteenParam || undefined}
+        restaurantName={settings?.restaurant_name || 'Restaurant'}
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+        accentColor={accentColor}
       />
 
       {/* Floating Category Navigation Sheet */}

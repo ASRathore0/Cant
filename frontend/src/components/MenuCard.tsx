@@ -5,6 +5,8 @@ import { MenuItem } from '../types';
 interface MenuCardProps {
   item: MenuItem;
   onSelect?: (item: MenuItem) => void;
+  onAddToCart?: (item: MenuItem) => void;
+  cartQty?: number;
   primaryColor?: string;
   secondaryColor?: string;
   accentColor?: string;
@@ -14,6 +16,8 @@ interface MenuCardProps {
 export const MenuCard: React.FC<MenuCardProps> = ({
   item,
   onSelect,
+  onAddToCart,
+  cartQty = 0,
   primaryColor = '#062D1F',
   secondaryColor = '#075C35',
   accentColor = '#E8C928',
@@ -146,13 +150,32 @@ export const MenuCard: React.FC<MenuCardProps> = ({
         )}
 
         {/* Sold Out Badge Overlay */}
-        {!isAvailable && (
+        {!isAvailable ? (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-1">
             <span className="bg-red-600 text-white text-[8px] sm:text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full shadow-md text-center">
               Sold Out
             </span>
           </div>
-        )}
+        ) : onAddToCart ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart(item);
+            }}
+            className="absolute bottom-1 inset-x-1.5 sm:inset-x-2 py-0.5 sm:py-1 bg-white hover:bg-stone-50 text-stone-900 border border-stone-200/90 rounded-lg shadow-md font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+            style={{ color: secondaryColor }}
+          >
+            {cartQty > 0 ? (
+              <span className="flex items-center gap-1 font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                {cartQty} Added
+              </span>
+            ) : (
+              <span>+ ADD</span>
+            )}
+          </button>
+        ) : null}
       </div>
     </div>
   );

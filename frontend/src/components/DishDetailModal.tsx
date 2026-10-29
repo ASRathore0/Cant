@@ -6,9 +6,10 @@ interface DishDetailModalProps {
   item: MenuItem | null;
   onClose: () => void;
   settings: RestaurantSettings | null;
+  onAddToCart?: (item: MenuItem, variant?: string, price?: number) => void;
 }
 
-export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose, settings }) => {
+export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose, settings, onAddToCart }) => {
   if (!item) return null;
 
   const whatsapp = settings?.whatsapp || '+91 98765 43210';
@@ -161,15 +162,59 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ item, onClose,
             </div>
           )}
 
-          {/* Bottom Action */}
-          <div className="pt-4 border-t border-stone-100 flex items-center gap-3">
+          {/* Portion Selector if Half/Full range */}
+          {item.is_available && item.price_type === 'range' && item.price_max && item.price_max > item.price && onAddToCart && (
+            <div className="pt-2 border-t border-stone-100">
+              <span className="text-xs font-bold text-stone-700 block mb-2">Choose Portion:</span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddToCart(item, 'Half', item.price);
+                    onClose();
+                  }}
+                  className="py-2.5 px-3 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-bold text-xs flex justify-between items-center hover:bg-emerald-100 transition-colors cursor-pointer"
+                >
+                  <span>Half Plate</span>
+                  <span>₹{item.price}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddToCart(item, 'Full', item.price_max!);
+                    onClose();
+                  }}
+                  className="py-2.5 px-3 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-bold text-xs flex justify-between items-center hover:bg-emerald-100 transition-colors cursor-pointer"
+                >
+                  <span>Full Plate</span>
+                  <span>₹{item.price_max}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Actions */}
+          <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row items-center gap-2.5">
+            {isAvailable && onAddToCart && !(item.price_type === 'range' && item.price_max && item.price_max > item.price) && (
+              <button
+                type="button"
+                onClick={() => {
+                  onAddToCart(item, undefined, item.price);
+                  onClose();
+                }}
+                className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 px-4 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <span>+ Add to Order Cart (₹{item.price})</span>
+              </button>
+            )}
+
             <button
               onClick={handleInquire}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] hover:brightness-110"
-              style={{ backgroundColor: secondaryColor }}
+              className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 px-4 text-stone-700 bg-stone-100 hover:bg-stone-200 text-xs font-bold rounded-2xl transition-all cursor-pointer"
             >
-              <MessageCircle className="w-4 h-4" style={{ color: accentColor }} />
-              <span>Inquire at Counter on WhatsApp</span>
+              <MessageCircle className="w-4 h-4 text-emerald-600" />
+              <span>Ask on WhatsApp</span>
             </button>
           </div>
         </div>
