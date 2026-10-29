@@ -680,7 +680,7 @@ export const PublicMenuPage: React.FC = () => {
                 </div>
 
                 {/* Quick Category Jump Badges */}
-                <div className="pt-3 border-t border-stone-100 flex flex-wrap items-center justify-center gap-2">
+                {/* <div className="pt-3 border-t border-stone-100 flex flex-wrap items-center justify-center gap-2">
                   <span className="text-[11px] text-[#72776F] font-semibold w-full block">
                     Jump directly to:
                   </span>
@@ -694,7 +694,7 @@ export const PublicMenuPage: React.FC = () => {
                       {c.name}
                     </button>
                   ))}
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
